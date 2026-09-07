@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Large raw / processed data (keep directory placeholders)
+data/raw/**
+!data/raw/.gitkeep
+data/processed/**
+!data/processed/.gitkeep
+
+# Model checkpoints & caches
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.safetensors
+.cache/
+huggingface/
+transformers_cache/
+bert_cache/
+
+# Experiment noise (keep tracked result stubs)
+results/**/*.png
+results/**/*.jpg
+results/**/*.pdf
+!results/metrics.json
+!results/plots/.gitkeep
+!results/retrieval_examples/.gitkeep
+
+# Local secrets / env
+.env
+*.log
+wandb/
+runs/
+
+# Report build artifacts (keep final PDF when present)
+report/**/*.aux
+report/**/*.log
+report/**/*.out
+report/**/*.synctex.gz
