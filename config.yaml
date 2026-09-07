@@ -1,0 +1,94 @@
+# CSE425 / EEE474 / CSE715 — GNN-Based BERT for Understanding Context from Music
+# Values taken from project PDF Sections 3–8.
+
+project:
+  name: gnn-bert-music-context
+  seed: 42
+  device: cuda
+
+# §3 Dataset Requirements — ≥1 audio + ≥1 text/tag source
+datasets:
+  primary_audio: fma_medium          # fma_small | fma_medium | gtzan | magna_tag_a_tune
+  text_source: musiccaps             # musiccaps | magna_tag_a_tune | fma_tags
+  emotion_aux: deam                  # optional L_aux (valence / arousal)
+  paths:
+    raw: data/raw
+    processed: data/processed
+    splits: data/splits
+
+# §3 Preprocessing pipeline
+audio:
+  sample_rate: 22050
+  n_mels: 128
+  n_chroma: 12
+  normalize_per_track: true
+  segment_seconds: 5.0               # fixed windows 5–10 s
+  hop_seconds: 2.5
+  use_beat_synchronous: false
+
+graph:
+  type: segment                      # segment | chord_transition
+  similarity_threshold: 0.7          # cosine τ for MFCC/chroma edges
+  temporal_edges: true
+  similarity_edges: true
+  feature: chroma                    # chroma | mfcc | mel
+
+text:
+  tokenizer: bert-base-uncased       # or distilbert-base-uncased
+  max_length: 128                    # PDF: 128–256
+  padding: max_length
+  truncation: true
+
+# §4 Model Tasks
+model:
+  bert_name: bert-base-uncased       # Task 1: bert-base-uncased | distilbert-base-uncased
+  freeze_bert: false
+  gnn_type: graphsage                # graphsage | gat  (Task 2)
+  gnn_hidden_dim: 128
+  gnn_layers: 2
+  gnn_dropout: 0.2
+  fusion: cross_attention            # cross_attention | early_concat  (Task 3)
+  projection_dim: 256                # shared space for Task 4
+
+# Training (Algorithms 1–4)
+train:
+  batch_size: 16
+  epochs: 20
+  learning_rate: 2.0e-5
+  weight_decay: 0.01
+  num_workers: 4
+  # Task 3: L = L_tags + α||v−v̂||² + β||a−â||²
+  alpha_valence: 0.5
+  beta_arousal: 0.5
+  # Task 4 InfoNCE temperature τ
+  temperature: 0.07
+  lambda_aux: 0.1
+
+# §6 Evaluation Metrics
+eval:
+  metrics:
+    - macro_f1
+    - micro_f1
+    - auc_pr
+    - mae_valence
+    - mae_arousal
+    - r2
+    - recall_at_1
+    - recall_at_5
+    - recall_at_10
+  top_k_tags: 50                     # MagnaTagATune top-50 (Task 1)
+
+# §8 Baselines — must compare ≥ 2
+baselines:
+  - majority_random                  # B1
+  - cnn_mel                          # B2
+  - bert_only                        # B3
+  # - pca_mlp                        # B4 optional
+
+# Output paths (PDF submission layout)
+output:
+  results_dir: results
+  metrics_file: results/metrics.json
+  plots_dir: results/plots
+  retrieval_dir: results/retrieval_examples
+  checkpoint_dir: results/checkpoints
