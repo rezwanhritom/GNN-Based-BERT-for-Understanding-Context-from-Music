@@ -1,0 +1,32 @@
+[
+  {
+    "track_id": 704,
+    "text": "Mano De Dios. Artist: F\u00f3sforo. Album: Macondo. Tags: ['fosforo', 'reggae', 'latin', 'spanish', 'reggaeton', 'fsforo']",
+    "true_genre": "International",
+    "pred_genre": "International",
+    "correct": true,
+    "num_nodes": 10,
+    "num_edges": 24,
+    "graph_path_note": "Segment graph with 10 nodes; temporal + similarity edges (\u03c4=0.7)."
+  },
+  {
+    "track_id": 705,
+    "text": "Tio Cocodrilo. Artist: F\u00f3sforo. Album: Macondo. Tags: ['fosforo', 'reggae', 'latin', 'spanish', 'reggaeton', 'fsforo']",
+    "true_genre": "International",
+    "pred_genre": "International",
+    "correct": true,
+    "num_nodes": 10,
+    "num_edges": 62,
+    "graph_path_note": "Segment graph with 10 nodes; temporal + similarity edges (\u03c4=0.7)."
+  },
+  {
+    "track_id": 182,
+    "text": "Jules Lost His Jewels. Artist: Ariel Pink's Haunted Graffiti. Album: Worn Copy. Tags: ['ariel pinks haunted graffiti']",
+    "true_genre": "Rock",
+    "pred_genre": "Experimental",
+    "correct": false,
+    "num_nodes": 10,
+    "num_edges": 20,
+    "graph_path_note": "Segment graph with 10 nodes; temporal + similarity edges (\u03c4=0.7)."
+  }
+]

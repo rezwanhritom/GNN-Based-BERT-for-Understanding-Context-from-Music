@@ -729,7 +729,381 @@ def _multiclass_f1(
 
 
 def train_task3(cfg: dict[str, Any]) -> None:
-    raise NotImplementedError("Implement in Task 3 stage.")
+    """
+    Algorithm 3 — GNN–BERT fusion on FMA-small (graph + track text → genre).
+    Ablations: BERT-only, GNN-only, early_concat, cross_attention.
+    DEAM emotion aux skipped (annotations not present under data/raw/deam).
+    """
+    from torch_geometric.data import Batch
+    from torch_geometric.loader import DataLoader as GeoDataLoader
+
+    from src.fusion_model import GNNBertFusionModel
+    from src.graph_builder import build_segment_graph
+
+    set_seed(int(cfg.get("project", {}).get("seed", 42)))
+    device = resolve_device(cfg)
+    print(f"[task3] device={device}")
+
+    paths = cfg["datasets"]["paths"]
+    processed_dir = Path(paths["processed"]) / "fma_small"
+    splits_path = Path(paths["splits"]) / "fma_small_splits.json"
+    with splits_path.open(encoding="utf-8") as f:
+        splits = json.load(f)
+
+    tracks = pd.read_csv(
+        Path(paths["raw"]) / "fma" / "fma_metadata" / "tracks.csv",
+        index_col=0,
+        header=[0, 1],
+    )
+
+    def track_text(tid: int) -> str:
+        row = tracks.loc[int(tid)]
+        title = str(row[("track", "title")]) if ("track", "title") in tracks.columns else ""
+        artist = str(row[("artist", "name")]) if ("artist", "name") in tracks.columns else ""
+        album = str(row[("album", "title")]) if ("album", "title") in tracks.columns else ""
+        atags = str(row[("artist", "tags")]) if ("artist", "tags") in tracks.columns else ""
+        parts = [
+            title if title and title != "nan" else "",
+            f"Artist: {artist}" if artist and artist != "nan" else "",
+            f"Album: {album}" if album and album != "nan" else "",
+            f"Tags: {atags}" if atags and atags not in {"nan", "[]", ""} else "",
+        ]
+        text = ". ".join(p for p in parts if p).strip()
+        return text if text else "unknown track"
+
+    graph_cfg = cfg.get("graph", {})
+    sim_tau = float(graph_cfg.get("similarity_threshold", 0.7))
+
+    def build_items(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        items = []
+        for row in rows:
+            tid = int(row["track_id"])
+            npz_path = processed_dir / f"{tid:06d}.npz"
+            if not npz_path.exists():
+                continue
+            arr = np.load(npz_path)
+            g = build_segment_graph(
+                arr["segment_vectors"],
+                similarity_threshold=sim_tau,
+                temporal_edges=bool(graph_cfg.get("temporal_edges", True)),
+                similarity_edges=bool(graph_cfg.get("similarity_edges", True)),
+                y=int(row["genre_id"]),
+                track_id=tid,
+            )
+            items.append(
+                {
+                    "graph": g,
+                    "text": track_text(tid),
+                    "genre_id": int(row["genre_id"]),
+                    "genre": str(row["genre"]),
+                    "track_id": tid,
+                }
+            )
+        return items
+
+    train_items = build_items(splits["train"])
+    val_items = build_items(splits["val"])
+    test_items = build_items(splits["test"])
+    num_classes = len(splits["genre_to_id"])
+    id_to_genre = {int(v): k for k, v in splits["genre_to_id"].items()}
+    in_channels = int(train_items[0]["graph"].x.size(1))
+    print(
+        f"[task3] pairs train={len(train_items)} val={len(val_items)} "
+        f"test={len(test_items)} classes={num_classes}"
+    )
+
+    model_cfg = cfg.get("model", {})
+    text_cfg = cfg.get("text", {})
+    train_cfg = cfg.get("train", {})
+    model_name = str(model_cfg.get("bert_name", "bert-base-uncased"))
+    max_length = int(text_cfg.get("max_length", 128))
+    batch_size = int(train_cfg.get("batch_size", 16))
+    epochs = int(train_cfg.get("epochs", 20))
+    lr = float(train_cfg.get("learning_rate", 2e-5))
+    weight_decay = float(train_cfg.get("weight_decay", 0.01))
+    tokenizer = build_tokenizer(model_name)
+
+    def make_loader(items: list[dict[str, Any]], shuffle: bool) -> DataLoader:
+        class FusionDataset(Dataset):
+            def __len__(self) -> int:
+                return len(items)
+
+            def __getitem__(self, idx: int) -> dict[str, Any]:
+                return items[idx]
+
+        def collate(batch: list[dict[str, Any]]) -> dict[str, Any]:
+            graphs = Batch.from_data_list([b["graph"] for b in batch])
+            tok = tokenize_batch([b["text"] for b in batch], tokenizer, max_length)
+            y = torch.tensor([b["genre_id"] for b in batch], dtype=torch.long)
+            return {
+                "graph": graphs,
+                "input_ids": tok["input_ids"],
+                "attention_mask": tok["attention_mask"],
+                "y": y,
+                "texts": [b["text"] for b in batch],
+                "track_ids": [b["track_id"] for b in batch],
+                "genres": [b["genre"] for b in batch],
+            }
+
+        return DataLoader(
+            FusionDataset(),
+            batch_size=batch_size,
+            shuffle=shuffle,
+            num_workers=0,
+            collate_fn=collate,
+        )
+
+    train_loader = make_loader(train_items, True)
+    val_loader = make_loader(val_items, False)
+    test_loader = make_loader(test_items, False)
+
+    criterion = nn.CrossEntropyLoss()
+    out_cfg = cfg.get("output", {})
+    ckpt_dir = Path(out_cfg.get("checkpoint_dir", "results/checkpoints"))
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
+    plots_dir = Path(out_cfg.get("plots_dir", "results/plots"))
+    plots_dir.mkdir(parents=True, exist_ok=True)
+
+    ablation_modes = ["bert_only", "gnn_only", "early_concat", "cross_attention"]
+    ablation_results: dict[str, Any] = {}
+
+    def eval_fusion(model: nn.Module, loader: DataLoader) -> dict[str, float]:
+        from sklearn.metrics import f1_score
+
+        model.eval()
+        ys, ps = [], []
+        losses: list[float] = []
+        with torch.no_grad():
+            for batch in loader:
+                g = batch["graph"].to(device)
+                logits = model(
+                    g.x,
+                    g.edge_index,
+                    g.batch,
+                    batch["input_ids"].to(device),
+                    batch["attention_mask"].to(device),
+                )
+                loss = criterion(logits, batch["y"].to(device))
+                losses.append(float(loss.item()))
+                pred = logits.argmax(dim=-1).cpu().tolist()
+                ps.extend(pred)
+                ys.extend(batch["y"].tolist())
+        return {
+            "loss": float(np.mean(losses)) if losses else 0.0,
+            "accuracy": float(np.mean([a == b for a, b in zip(ys, ps)])),
+            "macro_f1": float(
+                f1_score(ys, ps, average="macro", labels=list(range(num_classes)), zero_division=0)
+            ),
+        }
+
+    for mode in ablation_modes:
+        best_path = ckpt_dir / f"task3_{mode}_best.pt"
+        model = GNNBertFusionModel(
+            in_channels=in_channels,
+            num_classes=num_classes,
+            bert_name=model_name,
+            fusion=mode,
+            gnn_type=str(model_cfg.get("gnn_type", "graphsage")),
+            gnn_hidden=int(model_cfg.get("gnn_hidden_dim", 128)),
+            gnn_layers=int(model_cfg.get("gnn_layers", 2)),
+            gnn_dropout=float(model_cfg.get("gnn_dropout", 0.2)),
+            freeze_bert=bool(model_cfg.get("freeze_bert", False)),
+        ).to(device)
+
+        history: list[dict[str, float]] = []
+        best_f1 = -1.0
+
+        if best_path.exists():
+            print(f"[task3] resume/skip training for {mode} (found {best_path})")
+            ckpt = torch.load(best_path, map_location=device, weights_only=False)
+            model.load_state_dict(ckpt["model_state"])
+            val_m = eval_fusion(model, val_loader)
+            test_m = eval_fusion(model, test_loader)
+            best_f1 = float(val_m["macro_f1"])
+            ablation_results[mode] = {
+                "test": test_m,
+                "best_val_macro_f1": best_f1,
+                "history": history,
+                "checkpoint": str(best_path),
+                "resumed": True,
+            }
+            print(f"[task3-{mode}] resumed test: {test_m}")
+            continue
+
+        print(f"[task3] training fusion={mode}")
+        # GNN-only: higher LR; BERT modes: config LR
+        mode_lr = 1e-3 if mode == "gnn_only" else lr
+        opt = torch.optim.AdamW(
+            filter(lambda p: p.requires_grad, model.parameters()),
+            lr=mode_lr,
+            weight_decay=weight_decay,
+        )
+
+        for epoch in range(1, epochs + 1):
+            model.train()
+            losses = []
+            for batch in tqdm(train_loader, desc=f"task3-{mode} {epoch}/{epochs}"):
+                g = batch["graph"].to(device)
+                opt.zero_grad(set_to_none=True)
+                logits = model(
+                    g.x,
+                    g.edge_index,
+                    g.batch,
+                    batch["input_ids"].to(device),
+                    batch["attention_mask"].to(device),
+                )
+                loss = criterion(logits, batch["y"].to(device))
+                loss.backward()
+                opt.step()
+                losses.append(float(loss.item()))
+            val_m = eval_fusion(model, val_loader)
+            history.append(
+                {
+                    "epoch": float(epoch),
+                    "train_loss": float(np.mean(losses)),
+                    "val_accuracy": val_m["accuracy"],
+                    "val_macro_f1": val_m["macro_f1"],
+                }
+            )
+            print(
+                f"[task3-{mode}] epoch={epoch} loss={np.mean(losses):.4f} "
+                f"val_acc={val_m['accuracy']:.4f} val_macro_f1={val_m['macro_f1']:.4f}"
+            )
+            if val_m["macro_f1"] > best_f1:
+                best_f1 = val_m["macro_f1"]
+                torch.save({"model_state": model.state_dict(), "fusion": mode}, best_path)
+
+        ckpt = torch.load(best_path, map_location=device, weights_only=False)
+        model.load_state_dict(ckpt["model_state"])
+        test_m = eval_fusion(model, test_loader)
+        ablation_results[mode] = {
+            "test": test_m,
+            "best_val_macro_f1": best_f1,
+            "history": history,
+            "checkpoint": str(best_path),
+            "resumed": False,
+        }
+        print(f"[task3-{mode}] test: {test_m}")
+
+    # t-SNE of z from best cross-attention model
+    from sklearn.manifold import TSNE
+
+    best_mode = "cross_attention"
+    model = GNNBertFusionModel(
+        in_channels=in_channels,
+        num_classes=num_classes,
+        bert_name=model_name,
+        fusion=best_mode,
+        gnn_type=str(model_cfg.get("gnn_type", "graphsage")),
+        gnn_hidden=int(model_cfg.get("gnn_hidden_dim", 128)),
+        gnn_layers=int(model_cfg.get("gnn_layers", 2)),
+        gnn_dropout=float(model_cfg.get("gnn_dropout", 0.2)),
+    ).to(device)
+    model.load_state_dict(
+        torch.load(
+            ablation_results[best_mode]["checkpoint"],
+            map_location=device,
+            weights_only=False,
+        )["model_state"]
+    )
+    model.eval()
+    zs, labels, case_pool = [], [], []
+    with torch.no_grad():
+        for batch in test_loader:
+            g = batch["graph"].to(device)
+            logits, z = model(
+                g.x,
+                g.edge_index,
+                g.batch,
+                batch["input_ids"].to(device),
+                batch["attention_mask"].to(device),
+                return_z=True,
+            )
+            pred = logits.argmax(dim=-1).cpu().tolist()
+            zs.append(z.cpu().numpy())
+            labels.extend(batch["y"].tolist())
+            for i in range(len(batch["track_ids"])):
+                case_pool.append(
+                    {
+                        "track_id": int(batch["track_ids"][i]),
+                        "text": batch["texts"][i][:240],
+                        "true_genre": batch["genres"][i],
+                        "pred_genre": id_to_genre.get(int(pred[i]), str(pred[i])),
+                        "correct": bool(int(pred[i]) == int(batch["y"][i])),
+                    }
+                )
+
+    Z = np.concatenate(zs, axis=0)
+    # Cap t-SNE size for speed
+    n_tsne = min(len(labels), 1000)
+    idx = np.random.default_rng(42).choice(len(labels), size=n_tsne, replace=False)
+    emb = TSNE(n_components=2, perplexity=30, random_state=42, init="pca").fit_transform(Z[idx])
+    y_plot = np.array(labels)[idx]
+    plt.figure(figsize=(8, 6))
+    for gid, gname in sorted(id_to_genre.items()):
+        m = y_plot == gid
+        if m.any():
+            plt.scatter(emb[m, 0], emb[m, 1], s=12, alpha=0.7, label=gname)
+    plt.legend(markerscale=1.5, fontsize=8)
+    plt.title("Task 3: t-SNE of fusion z (coloured by genre)")
+    plt.tight_layout()
+    tsne_path = plots_dir / "task3_tsne_genre.png"
+    plt.savefig(tsne_path, dpi=150)
+    plt.close()
+
+    # 3 case studies (prefer one correct + mix)
+    correct = [c for c in case_pool if c["correct"]]
+    wrong = [c for c in case_pool if not c["correct"]]
+    cases = (correct[:2] + wrong[:1]) if correct and wrong else case_pool[:3]
+    # Enrich with edge counts from saved graphs
+    for c in cases:
+        npz = np.load(processed_dir / f"{c['track_id']:06d}.npz")
+        g = build_segment_graph(npz["segment_vectors"], similarity_threshold=sim_tau)
+        c["num_nodes"] = int(g.num_nodes)
+        c["num_edges"] = int(g.edge_index.size(1))
+        c["graph_path_note"] = (
+            f"Segment graph with {c['num_nodes']} nodes; "
+            f"temporal + similarity edges (τ={sim_tau})."
+        )
+    cases_path = Path(out_cfg.get("results_dir", "results")) / "task3_case_studies.json"
+    with cases_path.open("w", encoding="utf-8") as f:
+        json.dump(cases[:3], f, indent=2)
+
+    # Ablation bar plot
+    fig_path = plots_dir / "task3_ablation_macro_f1.png"
+    names = list(ablation_results.keys())
+    vals = [ablation_results[n]["test"]["macro_f1"] for n in names]
+    plt.figure(figsize=(7, 4))
+    plt.bar(names, vals)
+    plt.ylabel("Test Macro-F1")
+    plt.title("Task 3 ablations")
+    plt.xticks(rotation=20)
+    plt.tight_layout()
+    plt.savefig(fig_path, dpi=150)
+    plt.close()
+
+    payload_update = {
+        "task3_gnn_bert_fusion": {
+            "dataset": "fma_small",
+            "ablations": ablation_results,
+            "tsne_plot": str(tsne_path),
+            "ablation_plot": str(fig_path),
+            "case_studies": str(cases_path),
+            "note": "DEAM L_aux not applied (annotations not in data/raw/deam).",
+        }
+    }
+    metrics_file = Path(out_cfg.get("metrics_file", "results/metrics.json"))
+    payload: dict[str, Any] = payload_update
+    if metrics_file.exists():
+        try:
+            prev = json.loads(metrics_file.read_text(encoding="utf-8"))
+            if isinstance(prev, dict):
+                prev.update(payload_update)
+                payload = prev
+        except json.JSONDecodeError:
+            pass
+    save_metrics(payload, metrics_file)
+    print(f"[task3] wrote {metrics_file}, {tsne_path}, {cases_path}")
 
 
 def train_task4(cfg: dict[str, Any]) -> None:
