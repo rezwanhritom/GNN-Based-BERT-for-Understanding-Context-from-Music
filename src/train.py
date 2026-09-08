@@ -406,7 +406,326 @@ def train_task1(cfg: dict[str, Any]) -> None:
 
 
 def train_task2(cfg: dict[str, Any]) -> None:
-    raise NotImplementedError("Implement in Task 2 stage.")
+    """Algorithm 2 — GNN on FMA-small segment graphs + CNN mel baseline (B2)."""
+    from torch_geometric.loader import DataLoader as GeoDataLoader
+
+    from src.gnn_model import CNNMelBaseline, MusicGAT, MusicGraphSAGE
+    from src.graph_builder import build_segment_graph, save_graph, save_graph_json_summary
+
+    set_seed(int(cfg.get("project", {}).get("seed", 42)))
+    device = resolve_device(cfg)
+    print(f"[task2] device={device}")
+
+    paths = cfg["datasets"]["paths"]
+    processed_dir = Path(paths["processed"]) / "fma_small"
+    splits_path = Path(paths["splits"]) / "fma_small_splits.json"
+    if not splits_path.exists():
+        raise FileNotFoundError(f"Missing splits: {splits_path}")
+    with splits_path.open(encoding="utf-8") as f:
+        splits = json.load(f)
+
+    graph_cfg = cfg.get("graph", {})
+    sim_tau = float(graph_cfg.get("similarity_threshold", 0.7))
+    temporal_edges = bool(graph_cfg.get("temporal_edges", True))
+    similarity_edges = bool(graph_cfg.get("similarity_edges", True))
+
+    def rows_to_graphs(rows: list[dict[str, Any]]) -> list[Any]:
+        graphs = []
+        for row in rows:
+            tid = int(row["track_id"])
+            npz_path = processed_dir / f"{tid:06d}.npz"
+            if not npz_path.exists():
+                continue
+            arr = np.load(npz_path)
+            seg = arr["segment_vectors"]
+            g = build_segment_graph(
+                seg,
+                similarity_threshold=sim_tau,
+                temporal_edges=temporal_edges,
+                similarity_edges=similarity_edges,
+                y=int(row["genre_id"]),
+                track_id=tid,
+            )
+            graphs.append(g)
+        return graphs
+
+    train_graphs = rows_to_graphs(splits["train"])
+    val_graphs = rows_to_graphs(splits["val"])
+    test_graphs = rows_to_graphs(splits["test"])
+    num_classes = len(splits["genre_to_id"])
+    in_channels = int(train_graphs[0].x.size(1))
+    print(
+        f"[task2] graphs train={len(train_graphs)} val={len(val_graphs)} "
+        f"test={len(test_graphs)} in_dim={in_channels} classes={num_classes}"
+    )
+
+    # Submission: ≥ 20 example graphs
+    graph_samples_dir = Path(paths["processed"]) / "graph_samples"
+    for i, g in enumerate(train_graphs[:20]):
+        save_graph(g, graph_samples_dir / f"sample_{i:02d}.pt")
+        save_graph_json_summary(g, graph_samples_dir / f"sample_{i:02d}.json")
+    print(f"[task2] wrote 20 graph samples -> {graph_samples_dir}")
+
+    train_cfg = cfg.get("train", {})
+    batch_size = int(train_cfg.get("batch_size", 16))
+    epochs = int(train_cfg.get("epochs", 20))
+    # GNN/CNN from scratch: use 1e-3 (config 2e-5 is BERT-oriented)
+    lr = float(train_cfg.get("gnn_learning_rate", 1e-3))
+    weight_decay = float(train_cfg.get("weight_decay", 0.01))
+
+    model_cfg = cfg.get("model", {})
+    gnn_type = str(model_cfg.get("gnn_type", "graphsage")).lower()
+    hidden = int(model_cfg.get("gnn_hidden_dim", 128))
+    n_layers = int(model_cfg.get("gnn_layers", 2))
+    dropout = float(model_cfg.get("gnn_dropout", 0.2))
+
+    if gnn_type == "gat":
+        gnn = MusicGAT(
+            in_channels, hidden, n_layers, num_classes, dropout=dropout
+        ).to(device)
+    else:
+        gnn = MusicGraphSAGE(
+            in_channels, hidden, n_layers, num_classes, dropout=dropout
+        ).to(device)
+
+    train_loader = GeoDataLoader(train_graphs, batch_size=batch_size, shuffle=True)
+    val_loader = GeoDataLoader(val_graphs, batch_size=batch_size, shuffle=False)
+    test_loader = GeoDataLoader(test_graphs, batch_size=batch_size, shuffle=False)
+
+    criterion = nn.CrossEntropyLoss()
+    opt = torch.optim.AdamW(gnn.parameters(), lr=lr, weight_decay=weight_decay)
+
+    def eval_gnn(loader: Any) -> dict[str, float]:
+        gnn.eval()
+        correct, total = 0, 0
+        losses: list[float] = []
+        with torch.no_grad():
+            for batch in loader:
+                batch = batch.to(device)
+                logits = gnn(batch.x, batch.edge_index, batch.batch)
+                loss = criterion(logits, batch.y)
+                losses.append(float(loss.item()))
+                pred = logits.argmax(dim=-1)
+                correct += int((pred == batch.y).sum().item())
+                total += int(batch.y.numel())
+        return {
+            "loss": float(np.mean(losses)) if losses else 0.0,
+            "accuracy": correct / max(total, 1),
+            "macro_f1": _multiclass_f1(gnn, loader, device, num_classes),
+        }
+
+    history: list[dict[str, float]] = []
+    best_acc = -1.0
+    out_cfg = cfg.get("output", {})
+    ckpt_dir = Path(out_cfg.get("checkpoint_dir", "results/checkpoints"))
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
+    best_gnn_path = ckpt_dir / "task2_gnn_best.pt"
+
+    for epoch in range(1, epochs + 1):
+        gnn.train()
+        losses: list[float] = []
+        for batch in tqdm(train_loader, desc=f"task2-gnn {epoch}/{epochs}"):
+            batch = batch.to(device)
+            opt.zero_grad(set_to_none=True)
+            logits = gnn(batch.x, batch.edge_index, batch.batch)
+            loss = criterion(logits, batch.y)
+            loss.backward()
+            opt.step()
+            losses.append(float(loss.item()))
+        val_m = eval_gnn(val_loader)
+        row = {
+            "epoch": float(epoch),
+            "train_loss": float(np.mean(losses)),
+            "val_loss": val_m["loss"],
+            "val_accuracy": val_m["accuracy"],
+            "val_macro_f1": val_m["macro_f1"],
+        }
+        history.append(row)
+        print(
+            f"[task2-gnn] epoch={epoch} loss={row['train_loss']:.4f} "
+            f"val_acc={row['val_accuracy']:.4f} val_macro_f1={row['val_macro_f1']:.4f}"
+        )
+        if val_m["accuracy"] > best_acc:
+            best_acc = val_m["accuracy"]
+            torch.save({"model_state": gnn.state_dict(), "gnn_type": gnn_type}, best_gnn_path)
+
+    ckpt = torch.load(best_gnn_path, map_location=device, weights_only=False)
+    gnn.load_state_dict(ckpt["model_state"])
+    test_gnn = eval_gnn(test_loader)
+
+    # --- Baseline B2: CNN on mel ---
+    print("[task2] training CNN mel baseline (B2)...")
+    cnn = CNNMelBaseline(num_classes=num_classes, n_mels=int(cfg["audio"]["n_mels"])).to(device)
+    cnn_opt = torch.optim.AdamW(cnn.parameters(), lr=lr, weight_decay=weight_decay)
+
+    def load_mel_items(rows: list[dict[str, Any]]) -> list[tuple[np.ndarray, int]]:
+        items = []
+        for row in rows:
+            tid = int(row["track_id"])
+            npz_path = processed_dir / f"{tid:06d}.npz"
+            if not npz_path.exists():
+                continue
+            mel = np.load(npz_path)["mel"].astype(np.float32)
+            items.append((mel, int(row["genre_id"])))
+        return items
+
+    train_mel = load_mel_items(splits["train"])
+    val_mel = load_mel_items(splits["val"])
+    test_mel = load_mel_items(splits["test"])
+
+    def mel_batches(items: list[tuple[np.ndarray, int]], shuffle: bool):
+        idxs = list(range(len(items)))
+        if shuffle:
+            random.shuffle(idxs)
+        for start in range(0, len(idxs), batch_size):
+            batch_idx = idxs[start : start + batch_size]
+            mels = [items[i][0] for i in batch_idx]
+            ys = [items[i][1] for i in batch_idx]
+            max_t = max(m.shape[1] for m in mels)
+            n_mels = mels[0].shape[0]
+            stacked = np.zeros((len(mels), n_mels, max_t), dtype=np.float32)
+            for i, m in enumerate(mels):
+                stacked[i, :, : m.shape[1]] = m
+            yield torch.from_numpy(stacked), torch.tensor(ys, dtype=torch.long)
+
+    def eval_cnn(items: list[tuple[np.ndarray, int]]) -> dict[str, float]:
+        cnn.eval()
+        correct, total = 0, 0
+        all_true: list[int] = []
+        all_pred: list[int] = []
+        with torch.no_grad():
+            for xb, yb in mel_batches(items, shuffle=False):
+                logits = cnn(xb.to(device))
+                pred = logits.argmax(dim=-1).cpu()
+                correct += int((pred == yb).sum().item())
+                total += int(yb.numel())
+                all_true.extend(yb.tolist())
+                all_pred.extend(pred.tolist())
+        return {
+            "accuracy": correct / max(total, 1),
+            "macro_f1": float(
+                __import__("sklearn.metrics", fromlist=["f1_score"]).f1_score(
+                    all_true, all_pred, average="macro", zero_division=0
+                )
+            ),
+        }
+
+    best_cnn_acc = -1.0
+    best_cnn_path = ckpt_dir / "task2_cnn_best.pt"
+    cnn_history: list[dict[str, float]] = []
+    for epoch in range(1, epochs + 1):
+        cnn.train()
+        losses = []
+        for xb, yb in tqdm(
+            list(mel_batches(train_mel, shuffle=True)),
+            desc=f"task2-cnn {epoch}/{epochs}",
+        ):
+            cnn_opt.zero_grad(set_to_none=True)
+            logits = cnn(xb.to(device))
+            loss = criterion(logits, yb.to(device))
+            loss.backward()
+            cnn_opt.step()
+            losses.append(float(loss.item()))
+        val_c = eval_cnn(val_mel)
+        cnn_history.append(
+            {
+                "epoch": float(epoch),
+                "train_loss": float(np.mean(losses)),
+                "val_accuracy": val_c["accuracy"],
+                "val_macro_f1": val_c["macro_f1"],
+            }
+        )
+        print(
+            f"[task2-cnn] epoch={epoch} loss={np.mean(losses):.4f} "
+            f"val_acc={val_c['accuracy']:.4f} val_macro_f1={val_c['macro_f1']:.4f}"
+        )
+        if val_c["accuracy"] > best_cnn_acc:
+            best_cnn_acc = val_c["accuracy"]
+            torch.save({"model_state": cnn.state_dict()}, best_cnn_path)
+
+    cnn.load_state_dict(
+        torch.load(best_cnn_path, map_location=device, weights_only=False)["model_state"]
+    )
+    test_cnn = eval_cnn(test_mel)
+
+    # Majority baseline B1
+    train_labels = [int(r["genre_id"]) for r in splits["train"]]
+    majority = int(Counter(train_labels).most_common(1)[0][0])
+    test_labels = [int(r["genre_id"]) for r in splits["test"] if (processed_dir / f"{int(r['track_id']):06d}.npz").exists()]
+    maj_acc = float(np.mean([1.0 if y == majority else 0.0 for y in test_labels]))
+    maj_pred = [majority] * len(test_labels)
+    maj_f1 = float(
+        __import__("sklearn.metrics", fromlist=["f1_score"]).f1_score(
+            test_labels, maj_pred, average="macro", zero_division=0
+        )
+    )
+
+    plots_dir = Path(out_cfg.get("plots_dir", "results/plots"))
+    plots_dir.mkdir(parents=True, exist_ok=True)
+    plot_path = plots_dir / "task2_gnn_vs_cnn.png"
+    plt.figure(figsize=(7, 4))
+    plt.plot([h["epoch"] for h in history], [h["val_macro_f1"] for h in history], label="GNN val Macro-F1")
+    plt.plot(
+        [h["epoch"] for h in cnn_history],
+        [h["val_macro_f1"] for h in cnn_history],
+        label="CNN val Macro-F1",
+    )
+    plt.xlabel("Epoch")
+    plt.ylabel("Macro-F1")
+    plt.title("Task 2: GNN vs CNN (FMA-small)")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(plot_path, dpi=150)
+    plt.close()
+
+    payload_update = {
+        "task2_fma_small": {
+            "gnn": {"test": test_gnn, "best_val_accuracy": best_acc, "history": history, "checkpoint": str(best_gnn_path)},
+            "cnn_mel_baseline": {
+                "test": test_cnn,
+                "best_val_accuracy": best_cnn_acc,
+                "history": cnn_history,
+                "checkpoint": str(best_cnn_path),
+            },
+            "majority_baseline": {"test_accuracy": maj_acc, "test_macro_f1": maj_f1},
+            "graph_samples_dir": str(graph_samples_dir),
+            "comparison_plot": str(plot_path),
+        }
+    }
+    metrics_file = Path(out_cfg.get("metrics_file", "results/metrics.json"))
+    payload: dict[str, Any] = payload_update
+    if metrics_file.exists():
+        try:
+            prev = json.loads(metrics_file.read_text(encoding="utf-8"))
+            if isinstance(prev, dict):
+                prev.update(payload_update)
+                payload = prev
+        except json.JSONDecodeError:
+            pass
+    save_metrics(payload, metrics_file)
+    print(f"[task2] GNN test: {test_gnn}")
+    print(f"[task2] CNN test: {test_cnn}")
+    print(f"[task2] Majority test acc={maj_acc:.4f} macro_f1={maj_f1:.4f}")
+    print(f"[task2] wrote {metrics_file}, {plot_path}")
+
+
+def _multiclass_f1(
+    model: nn.Module,
+    loader: Any,
+    device: torch.device,
+    num_classes: int,
+) -> float:
+    from sklearn.metrics import f1_score
+
+    model.eval()
+    ys, ps = [], []
+    with torch.no_grad():
+        for batch in loader:
+            batch = batch.to(device)
+            logits = model(batch.x, batch.edge_index, batch.batch)
+            ps.extend(logits.argmax(dim=-1).cpu().tolist())
+            ys.extend(batch.y.cpu().tolist())
+    return float(f1_score(ys, ps, average="macro", labels=list(range(num_classes)), zero_division=0))
 
 
 def train_task3(cfg: dict[str, Any]) -> None:
