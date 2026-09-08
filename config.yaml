@@ -8,7 +8,7 @@ project:
 
 # §3 Dataset Requirements — ≥1 audio + ≥1 text/tag source
 datasets:
-  primary_audio: fma_medium          # fma_small | fma_medium | gtzan | magna_tag_a_tune
+  primary_audio: fma_small           # fma_small | fma_medium | gtzan | magna_tag_a_tune
   text_source: musiccaps             # musiccaps | magna_tag_a_tune | fma_tags
   emotion_aux: deam                  # optional L_aux (valence / arousal)
   paths:
