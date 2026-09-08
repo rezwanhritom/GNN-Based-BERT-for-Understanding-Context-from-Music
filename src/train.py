@@ -1107,7 +1107,381 @@ def train_task3(cfg: dict[str, Any]) -> None:
 
 
 def train_task4(cfg: dict[str, Any]) -> None:
-    raise NotImplementedError("Implement in Task 4 stage.")
+    """
+    Algorithm 4 — Contrastive dual-encoder on MusicCaps (graph ↔ caption).
+    Downloads missing audio clips via yt-dlp when needed.
+    """
+    from torch_geometric.data import Batch
+
+    from src.audio_features import extract_track_features
+    from src.contrastive import DualEncoderContrastive, info_nce_loss, retrieval_metrics
+    from src.graph_builder import build_segment_graph
+
+    set_seed(int(cfg.get("project", {}).get("seed", 42)))
+    device = resolve_device(cfg)
+    print(f"[task4] device={device}")
+
+    paths = cfg["datasets"]["paths"]
+    raw_mc = Path(paths["raw"]) / "musiccaps"
+    csv_path = raw_mc / "musiccaps-public.csv"
+    audio_dir = raw_mc / "audio"
+    processed_dir = Path(paths["processed"]) / "musiccaps"
+    audio_dir.mkdir(parents=True, exist_ok=True)
+    processed_dir.mkdir(parents=True, exist_ok=True)
+
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Missing MusicCaps CSV: {csv_path}")
+
+    df = pd.read_csv(csv_path)
+
+    def clip_stem(row: pd.Series) -> str:
+        return f"{row['ytid']}_{int(row['start_s'])}_{int(row['end_s'])}"
+
+    def find_audio(row: pd.Series) -> Path | None:
+        """Accept segment-named files or HF mirror `{ytid}.wav`."""
+        stem = clip_stem(row)
+        ytid = str(row["ytid"])
+        for name in (stem, ytid):
+            for ext in (".wav", ".mp3", ".m4a", ".webm", ".opus", ".ogg"):
+                p = audio_dir / f"{name}{ext}"
+                if p.exists() and p.stat().st_size > 1000:
+                    return p
+            matches = list(audio_dir.glob(f"{name}.*"))
+            if matches:
+                return matches[0]
+        return None
+
+    # Download until we have a usable corpus (HF mirror preferred over YouTube)
+    min_clips = int(cfg.get("train", {}).get("task4_min_clips", 800))
+    have = sum(1 for _, row in df.iterrows() if find_audio(row) is not None)
+    print(f"[task4] existing MusicCaps audio clips: {have}")
+    if have < min_clips:
+        print(f"[task4] downloading MusicCaps audio via HF mirror (target ≥ {min_clips})...")
+        from src.download_musiccaps_audio import download_from_hf, list_hf_ytids
+
+        available = list_hf_ytids()
+        need = [
+            str(row["ytid"])
+            for _, row in df.iterrows()
+            if find_audio(row) is None and str(row["ytid"]) in available
+        ]
+        need = need[: max(min_clips * 2, min_clips)]
+        download_from_hf(audio_dir, ytids=need, workers=8)
+        have = sum(1 for _, row in df.iterrows() if find_audio(row) is not None)
+        print(f"[task4] audio clips after download: {have}")
+
+    if have < 50:
+        raise RuntimeError(
+            f"Too few MusicCaps audio clips ({have}). "
+            "Re-run: python -m src.download_musiccaps_audio --source hf --limit 1500"
+        )
+
+    graph_cfg = cfg.get("graph", {})
+    sim_tau = float(graph_cfg.get("similarity_threshold", 0.7))
+
+    pairs: list[dict[str, Any]] = []
+    for _, row in tqdm(list(df.iterrows()), desc="build musiccaps pairs"):
+        stem = clip_stem(row)
+        audio_path = find_audio(row)
+        if audio_path is None:
+            continue
+        npz_path = processed_dir / f"{stem}.npz"
+        try:
+            if not npz_path.exists():
+                feats = extract_track_features(audio_path, cfg)
+                np.savez_compressed(
+                    npz_path,
+                    segment_vectors=feats["segment_vectors"],
+                    mel=feats["mel"],
+                    chroma=feats["chroma"],
+                )
+            arr = np.load(npz_path)
+            g = build_segment_graph(
+                arr["segment_vectors"],
+                similarity_threshold=sim_tau,
+                temporal_edges=bool(graph_cfg.get("temporal_edges", True)),
+                similarity_edges=bool(graph_cfg.get("similarity_edges", True)),
+            )
+            pairs.append(
+                {
+                    "stem": stem,
+                    "ytid": str(row["ytid"]),
+                    "caption": str(row["caption"]),
+                    "aspect_list": str(row.get("aspect_list", "")),
+                    "is_eval": bool(row["is_audioset_eval"]),
+                    "graph": g,
+                }
+            )
+        except Exception as exc:  # noqa: BLE001
+            tqdm.write(f"[warn] {stem}: {exc}")
+
+    train_pairs = [p for p in pairs if not p["is_eval"]]
+    test_pairs = [p for p in pairs if p["is_eval"]]
+    rng = np.random.default_rng(int(cfg.get("project", {}).get("seed", 42)))
+    idx = np.arange(len(train_pairs))
+    rng.shuffle(idx)
+    n_val = max(1, int(0.1 * len(idx)))
+    val_pairs = [train_pairs[i] for i in idx[:n_val]]
+    train_pairs = [train_pairs[i] for i in idx[n_val:]]
+    print(
+        f"[task4] pairs train={len(train_pairs)} val={len(val_pairs)} "
+        f"test={len(test_pairs)}"
+    )
+    if len(train_pairs) < 16 or len(test_pairs) < 8:
+        raise RuntimeError("Not enough MusicCaps pairs after preprocessing.")
+
+    model_cfg = cfg.get("model", {})
+    text_cfg = cfg.get("text", {})
+    train_cfg = cfg.get("train", {})
+    model_name = str(model_cfg.get("bert_name", "bert-base-uncased"))
+    max_length = int(text_cfg.get("max_length", 128))
+    batch_size = int(train_cfg.get("batch_size", 16))
+    epochs = int(train_cfg.get("epochs", 20))
+    lr = float(train_cfg.get("learning_rate", 2e-5))
+    weight_decay = float(train_cfg.get("weight_decay", 0.01))
+    temperature = float(train_cfg.get("temperature", 0.07))
+    proj_dim = int(model_cfg.get("projection_dim", 256))
+    tokenizer = build_tokenizer(model_name)
+    in_channels = int(train_pairs[0]["graph"].x.size(1))
+
+    def make_loader(items: list[dict[str, Any]], shuffle: bool) -> DataLoader:
+        class PairDS(Dataset):
+            def __len__(self) -> int:
+                return len(items)
+
+            def __getitem__(self, i: int) -> dict[str, Any]:
+                return items[i]
+
+        def collate(batch: list[dict[str, Any]]) -> dict[str, Any]:
+            graphs = Batch.from_data_list([b["graph"] for b in batch])
+            tok = tokenize_batch([b["caption"] for b in batch], tokenizer, max_length)
+            return {
+                "graph": graphs,
+                "input_ids": tok["input_ids"],
+                "attention_mask": tok["attention_mask"],
+                "captions": [b["caption"] for b in batch],
+                "stems": [b["stem"] for b in batch],
+            }
+
+        return DataLoader(
+            PairDS(),
+            batch_size=batch_size,
+            shuffle=shuffle,
+            num_workers=0,
+            collate_fn=collate,
+            drop_last=shuffle,
+        )
+
+    train_loader = make_loader(train_pairs, True)
+    # For retrieval we embed full splits
+    model = DualEncoderContrastive(
+        in_channels=in_channels,
+        bert_name=model_name,
+        gnn_type=str(model_cfg.get("gnn_type", "graphsage")),
+        gnn_hidden=int(model_cfg.get("gnn_hidden_dim", 128)),
+        gnn_layers=int(model_cfg.get("gnn_layers", 2)),
+        gnn_dropout=float(model_cfg.get("gnn_dropout", 0.2)),
+        projection_dim=proj_dim,
+        temperature=temperature,
+        freeze_bert=bool(model_cfg.get("freeze_bert", False)),
+    ).to(device)
+
+    opt = torch.optim.AdamW(
+        filter(lambda p: p.requires_grad, model.parameters()),
+        lr=lr,
+        weight_decay=weight_decay,
+    )
+    out_cfg = cfg.get("output", {})
+    ckpt_dir = Path(out_cfg.get("checkpoint_dir", "results/checkpoints"))
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
+    best_path = ckpt_dir / "task4_contrastive_best.pt"
+    best_r5 = -1.0
+    history: list[dict[str, float]] = []
+
+    @torch.no_grad()
+    def embed_split(items: list[dict[str, Any]]) -> tuple[torch.Tensor, torch.Tensor, list[str]]:
+        model.eval()
+        gs, ts, stems = [], [], []
+        loader = make_loader(items, shuffle=False)
+        for batch in loader:
+            g = batch["graph"].to(device)
+            ge, te = model(
+                g.x,
+                g.edge_index,
+                g.batch,
+                batch["input_ids"].to(device),
+                batch["attention_mask"].to(device),
+            )
+            gs.append(ge.cpu())
+            ts.append(te.cpu())
+            stems.extend(batch["stems"])
+        return torch.cat(gs, dim=0), torch.cat(ts, dim=0), stems
+
+    def eval_retrieval(items: list[dict[str, Any]]) -> dict[str, float]:
+        g_emb, t_emb, _ = embed_split(items)
+        sim_g2t = g_emb @ t_emb.t()
+        sim_t2g = t_emb @ g_emb.t()
+        m_g2t = retrieval_metrics(sim_g2t)
+        m_t2g = retrieval_metrics(sim_t2g)
+        return {
+            **{f"audio2caption_{k}": v for k, v in m_g2t.items()},
+            **{f"caption2audio_{k}": v for k, v in m_t2g.items()},
+        }
+
+    for epoch in range(1, epochs + 1):
+        model.train()
+        losses = []
+        for batch in tqdm(train_loader, desc=f"task4 {epoch}/{epochs}"):
+            g = batch["graph"].to(device)
+            opt.zero_grad(set_to_none=True)
+            ge, te = model(
+                g.x,
+                g.edge_index,
+                g.batch,
+                batch["input_ids"].to(device),
+                batch["attention_mask"].to(device),
+            )
+            loss = info_nce_loss(ge, te, temperature=temperature)
+            loss.backward()
+            opt.step()
+            losses.append(float(loss.item()))
+        val_m = eval_retrieval(val_pairs if len(val_pairs) >= 8 else test_pairs[:64])
+        row = {
+            "epoch": float(epoch),
+            "train_loss": float(np.mean(losses)),
+            **val_m,
+        }
+        history.append(row)
+        r5 = val_m.get("caption2audio_R@5", 0.0)
+        print(
+            f"[task4] epoch={epoch} loss={row['train_loss']:.4f} "
+            f"c2a_R@1={val_m.get('caption2audio_R@1', 0):.3f} "
+            f"c2a_R@5={r5:.3f} a2c_R@5={val_m.get('audio2caption_R@5', 0):.3f}"
+        )
+        if r5 > best_r5:
+            best_r5 = r5
+            torch.save({"model_state": model.state_dict()}, best_path)
+
+    model.load_state_dict(
+        torch.load(best_path, map_location=device, weights_only=False)["model_state"]
+    )
+    test_m = eval_retrieval(test_pairs)
+    print(f"[task4] test retrieval: {test_m}")
+
+    # 10 qualitative retrieval examples (caption → top-3 audio)
+    g_emb, t_emb, stems = embed_split(test_pairs)
+    sim = t_emb @ g_emb.t()  # caption → audio
+    caption_by_stem = {p["stem"]: p["caption"] for p in test_pairs}
+    examples = []
+    n_ex = min(10, len(test_pairs))
+    for i in range(n_ex):
+        top3 = sim[i].topk(min(3, sim.size(1))).indices.tolist()
+        examples.append(
+            {
+                "query_caption": caption_by_stem[stems[i]][:300],
+                "query_stem": stems[i],
+                "top3_matched_clips": [
+                    {
+                        "stem": stems[j],
+                        "caption": caption_by_stem[stems[j]][:200],
+                        "score": float(sim[i, j].item()),
+                        "is_correct": bool(j == i),
+                    }
+                    for j in top3
+                ],
+            }
+        )
+    retrieval_dir = Path(out_cfg.get("retrieval_dir", "results/retrieval_examples"))
+    retrieval_dir.mkdir(parents=True, exist_ok=True)
+    examples_path = retrieval_dir / "task4_caption_to_audio_examples.json"
+    with examples_path.open("w", encoding="utf-8") as f:
+        json.dump(examples, f, indent=2)
+
+    # Zero-shot tag prediction from captions (text tower) vs Task 1 supervised reference
+    from src.evaluate import macro_micro_f1
+
+    tag_data = build_musiccaps_tag_proxy(
+        csv_path,
+        top_k=int(cfg.get("eval", {}).get("top_k_tags", 50)),
+        seed=int(cfg.get("project", {}).get("seed", 42)),
+    )
+    id_to_tag = tag_data["id_to_tag"]
+    tag_names = [id_to_tag[i] for i in range(len(id_to_tag))]
+    model.eval()
+    with torch.no_grad():
+        tag_tok = tokenize_batch(tag_names, tokenizer, max_length=32)
+        tag_emb = model.encode_text(
+            tag_tok["input_ids"].to(device),
+            tag_tok["attention_mask"].to(device),
+        ).cpu()
+        # Evaluate on MusicCaps test captions that have labels
+        y_true, y_prob = [], []
+        for row in tag_data["test"][:2000]:
+            tok = tokenize_batch([row["caption"]], tokenizer, max_length=max_length)
+            c_emb = model.encode_text(
+                tok["input_ids"].to(device),
+                tok["attention_mask"].to(device),
+            ).cpu()
+            scores = (c_emb @ tag_emb.t()).squeeze(0).numpy()
+            # map cosine [-1,1] roughly to probs via sigmoid scaled
+            prob = 1.0 / (1.0 + np.exp(-5.0 * scores))
+            y_prob.append(prob.astype(np.float32))
+            y_true.append(row["labels"])
+        y_true_a = np.stack(y_true, axis=0)
+        y_prob_a = np.stack(y_prob, axis=0)
+        zs_metrics = macro_micro_f1(y_true_a, y_prob_a, threshold=0.5)
+
+    # Reference: Task 1 supervised test metrics if present
+    metrics_file = Path(out_cfg.get("metrics_file", "results/metrics.json"))
+    task1_ref = None
+    if metrics_file.exists():
+        try:
+            prev = json.loads(metrics_file.read_text(encoding="utf-8"))
+            task1_ref = prev.get("task1_bert_musiccaps", {}).get("test")
+        except json.JSONDecodeError:
+            prev = {}
+    else:
+        prev = {}
+
+    plots_dir = Path(out_cfg.get("plots_dir", "results/plots"))
+    plots_dir.mkdir(parents=True, exist_ok=True)
+    plot_path = plots_dir / "task4_retrieval_r_at_k.png"
+    ks = [1, 5, 10]
+    c2a = [test_m.get(f"caption2audio_R@{k}", 0.0) for k in ks]
+    a2c = [test_m.get(f"audio2caption_R@{k}", 0.0) for k in ks]
+    x = np.arange(len(ks))
+    plt.figure(figsize=(6, 4))
+    plt.bar(x - 0.15, c2a, width=0.3, label="Caption→Audio")
+    plt.bar(x + 0.15, a2c, width=0.3, label="Audio→Caption")
+    plt.xticks(x, [f"R@{k}" for k in ks])
+    plt.ylim(0, 1)
+    plt.ylabel("Recall")
+    plt.title("Task 4 MusicCaps retrieval")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(plot_path, dpi=150)
+    plt.close()
+
+    payload_update = {
+        "task4_contrastive_musiccaps": {
+            "n_pairs": {"train": len(train_pairs), "val": len(val_pairs), "test": len(test_pairs)},
+            "test_retrieval": test_m,
+            "history": history,
+            "checkpoint": str(best_path),
+            "retrieval_examples": str(examples_path),
+            "retrieval_plot": str(plot_path),
+            "zero_shot_tag_from_captions": zs_metrics,
+            "task1_supervised_tag_reference": task1_ref,
+        }
+    }
+    if isinstance(prev, dict):
+        prev.update(payload_update)
+        payload = prev
+    else:
+        payload = payload_update
+    save_metrics(payload, metrics_file)
+    print(f"[task4] zero-shot tag F1: {zs_metrics} | Task1 ref: {task1_ref}")
+    print(f"[task4] wrote {metrics_file}, {examples_path}, {plot_path}")
 
 
 def main() -> None:
