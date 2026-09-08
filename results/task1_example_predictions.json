@@ -1,0 +1,81 @@
+[
+  {
+    "ytid": "-0Gj8-vB1q4",
+    "caption": "The low quality recording features a ballad song that contains sustained strings, mellow piano melody and soft female vocal singing over it. It sounds sad and soulful, like something you would hear at Sunday services.",
+    "true_tags": [
+      "low quality",
+      "soulful"
+    ],
+    "pred_tags": [
+      "low quality",
+      "soulful"
+    ],
+    "pred_scores": {
+      "low quality": 0.9455434679985046,
+      "soulful": 0.9384236931800842
+    }
+  },
+  {
+    "ytid": "-0vPFx-wRRI",
+    "caption": "a male voice is singing a melody with changing tempos while snipping his fingers rhythmically. The recording sounds like it has been recorded in an empty room. This song may be playing, practicing snipping and singing along.",
+    "true_tags": [
+      "amateur recording"
+    ],
+    "pred_tags": [
+      "amateur recording"
+    ],
+    "pred_scores": {
+      "amateur recording": 0.9300714135169983
+    }
+  },
+  {
+    "ytid": "-0xzrMun0Rs",
+    "caption": "This song contains digital drums playing a simple groove along with two guitars. One strumming chords along with the snare the other one playing a melody on top. An e-bass is playing the footnote while a piano is playing a major and minor chord progression. A trumpet is playing a loud melody alongsi",
+    "true_tags": [
+      "medium tempo",
+      "piano",
+      "acoustic guitar",
+      "e-bass"
+    ],
+    "pred_tags": [
+      "medium tempo",
+      "piano",
+      "pop",
+      "e-bass",
+      "keyboard"
+    ],
+    "pred_scores": {
+      "medium tempo": 0.5393932461738586,
+      "piano": 0.7748258113861084,
+      "pop": 0.7509238719940186,
+      "e-bass": 0.8440889120101929,
+      "keyboard": 0.6838611960411072
+    }
+  },
+  {
+    "ytid": "-1OlgJWehn8",
+    "caption": "This clip is three tracks playing consecutively. The first one is an electric guitar lead harmony with a groovy bass line, followed by white noise and then a female vocalisation to a vivacious melody with a keyboard harmony, slick drumming, funky bass lines and male backup. The three songs are unrel",
+    "true_tags": [
+      "instrumental",
+      "bass guitar"
+    ],
+    "pred_tags": [],
+    "pred_scores": {}
+  },
+  {
+    "ytid": "-1UWSisR2zo",
+    "caption": "A male singer sings this groovy melody. The song is a techno dance song with a groovy bass line, strong drumming rhythm and a keyboard accompaniment. The song is so groovy and serves as a dance track for the dancing children. The audio quality is very poor with high gains and hissing noise.",
+    "true_tags": [
+      "live performance",
+      "medium tempo",
+      "male singer",
+      "poor audio quality"
+    ],
+    "pred_tags": [
+      "male singer"
+    ],
+    "pred_scores": {
+      "male singer": 0.8773295879364014
+    }
+  }
+]
