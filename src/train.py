@@ -1,5 +1,5 @@
 """
-Training entrypoint for Tasks 1–4 (Algorithms 1–4).
+Training entrypoint for Tasks 1-4 (Algorithms 1-4).
 
 Usage:
   python -m src.train --task 1 --config config.yaml
@@ -28,11 +28,9 @@ from tqdm import tqdm
 from src.bert_encoder import BertMusicTagClassifier, build_tokenizer, tokenize_batch
 from src.evaluate import macro_micro_f1, mean_auc_pr, save_metrics
 
-
 def load_config(path: str | Path) -> dict[str, Any]:
     with Path(path).open(encoding="utf-8") as f:
         return yaml.safe_load(f)
-
 
 def set_seed(seed: int) -> None:
     random.seed(seed)
@@ -41,13 +39,11 @@ def set_seed(seed: int) -> None:
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
-
 def resolve_device(cfg: dict[str, Any]) -> torch.device:
     want = str(cfg.get("project", {}).get("device", "cuda"))
     if want == "cuda" and torch.cuda.is_available():
         return torch.device("cuda")
     return torch.device("cpu")
-
 
 def parse_aspect_list(value: Any) -> list[str]:
     """MusicCaps aspect_list is a stringified Python list."""
@@ -64,7 +60,6 @@ def parse_aspect_list(value: Any) -> list[str]:
         pass
     return [t.strip().lower() for t in text.split(",") if t.strip()]
 
-
 def build_musiccaps_tag_proxy(
     csv_path: Path,
     top_k: int,
@@ -72,9 +67,9 @@ def build_musiccaps_tag_proxy(
     val_ratio: float = 0.1,
 ) -> dict[str, Any]:
     """
-    MusicCaps caption → tag proxy (PDF Task 1):
+    MusicCaps caption -> tag proxy :
       X_text = caption, y = multi-hot over top-K aspect tags.
-    Split: is_audioset_eval → test; remaining → train/val.
+    Split: is_audioset_eval -> test; remaining -> train/val.
     """
     df = pd.read_csv(csv_path)
     df["aspects"] = df["aspect_list"].map(parse_aspect_list)
@@ -123,7 +118,6 @@ def build_musiccaps_tag_proxy(
         "test": encode_split(test_df),
     }
 
-
 class MusicCapsTagDataset(Dataset):
     def __init__(self, rows: list[dict[str, Any]]) -> None:
         self.rows = rows
@@ -138,7 +132,6 @@ class MusicCapsTagDataset(Dataset):
             "labels": torch.from_numpy(row["labels"]),
             "ytid": row["ytid"],
         }
-
 
 def collate_musiccaps(
     batch: list[dict[str, Any]],
@@ -155,7 +148,6 @@ def collate_musiccaps(
         "captions": texts,
         "ytids": [b["ytid"] for b in batch],
     }
-
 
 @torch.no_grad()
 def evaluate_loader(
@@ -180,7 +172,6 @@ def evaluate_loader(
     metrics["auc_pr"] = mean_auc_pr(y_true, y_prob)
     return metrics
 
-
 def plot_f1_curves(
     history: list[dict[str, float]],
     out_path: Path,
@@ -198,7 +189,6 @@ def plot_f1_curves(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(out_path, dpi=150)
     plt.close()
-
 
 @torch.no_grad()
 def example_predictions(
@@ -230,9 +220,8 @@ def example_predictions(
         )
     return examples
 
-
 def train_task1(cfg: dict[str, Any]) -> None:
-    """Algorithm 1 — BERT multi-label tag classifier on MusicCaps caption→tag proxy."""
+    """Task 1 - BERT multi-label tag classifier on MusicCaps caption->tag proxy."""
     set_seed(int(cfg.get("project", {}).get("seed", 42)))
     device = resolve_device(cfg)
     print(f"[task1] device={device}")
@@ -404,9 +393,8 @@ def train_task1(cfg: dict[str, Any]) -> None:
     print(f"[task1] test metrics: {test_metrics}")
     print(f"[task1] wrote {metrics_file}, {plot_path}, {examples_path}")
 
-
 def train_task2(cfg: dict[str, Any]) -> None:
-    """Algorithm 2 — GNN on FMA-small segment graphs + CNN mel baseline (B2)."""
+    """Task 2 - GNN on FMA-small segment graphs + CNN mel baseline (B2)."""
     from torch_geometric.loader import DataLoader as GeoDataLoader
 
     from src.gnn_model import CNNMelBaseline, MusicGAT, MusicGraphSAGE
@@ -708,7 +696,6 @@ def train_task2(cfg: dict[str, Any]) -> None:
     print(f"[task2] Majority test acc={maj_acc:.4f} macro_f1={maj_f1:.4f}")
     print(f"[task2] wrote {metrics_file}, {plot_path}")
 
-
 def _multiclass_f1(
     model: nn.Module,
     loader: Any,
@@ -727,10 +714,9 @@ def _multiclass_f1(
             ys.extend(batch.y.cpu().tolist())
     return float(f1_score(ys, ps, average="macro", labels=list(range(num_classes)), zero_division=0))
 
-
 def train_task3(cfg: dict[str, Any]) -> None:
     """
-    Algorithm 3 — GNN–BERT fusion on FMA-small (graph + track text → genre).
+    Task 3 - GNN-BERT fusion on FMA-small (graph + track text -> genre).
     Ablations: BERT-only, GNN-only, early_concat, cross_attention.
     DEAM emotion aux skipped (annotations not present under data/raw/deam).
     """
@@ -1063,7 +1049,7 @@ def train_task3(cfg: dict[str, Any]) -> None:
         c["num_edges"] = int(g.edge_index.size(1))
         c["graph_path_note"] = (
             f"Segment graph with {c['num_nodes']} nodes; "
-            f"temporal + similarity edges (τ={sim_tau})."
+            f"temporal + similarity edges (tau={sim_tau})."
         )
     cases_path = Path(out_cfg.get("results_dir", "results")) / "task3_case_studies.json"
     with cases_path.open("w", encoding="utf-8") as f:
@@ -1105,10 +1091,9 @@ def train_task3(cfg: dict[str, Any]) -> None:
     save_metrics(payload, metrics_file)
     print(f"[task3] wrote {metrics_file}, {tsne_path}, {cases_path}")
 
-
 def train_task4(cfg: dict[str, Any]) -> None:
     """
-    Algorithm 4 — Contrastive dual-encoder on MusicCaps (graph ↔ caption).
+    Task 4 - Contrastive dual-encoder on MusicCaps (graph ↔ caption).
     Downloads missing audio clips via yt-dlp when needed.
     """
     from torch_geometric.data import Batch
@@ -1151,29 +1136,13 @@ def train_task4(cfg: dict[str, Any]) -> None:
                 return matches[0]
         return None
 
-    # Download until we have a usable corpus (HF mirror preferred over YouTube)
-    min_clips = int(cfg.get("train", {}).get("task4_min_clips", 800))
+    # Use existing on-disk MusicCaps audio only (no re-download)
+    min_clips = int(cfg.get("train", {}).get("task4_min_clips", 200))
     have = sum(1 for _, row in df.iterrows() if find_audio(row) is not None)
     print(f"[task4] existing MusicCaps audio clips: {have}")
-    if have < min_clips:
-        print(f"[task4] downloading MusicCaps audio via HF mirror (target ≥ {min_clips})...")
-        from src.download_musiccaps_audio import download_from_hf, list_hf_ytids
-
-        available = list_hf_ytids()
-        need = [
-            str(row["ytid"])
-            for _, row in df.iterrows()
-            if find_audio(row) is None and str(row["ytid"]) in available
-        ]
-        need = need[: max(min_clips * 2, min_clips)]
-        download_from_hf(audio_dir, ytids=need, workers=8)
-        have = sum(1 for _, row in df.iterrows() if find_audio(row) is not None)
-        print(f"[task4] audio clips after download: {have}")
-
     if have < 50:
         raise RuntimeError(
-            f"Too few MusicCaps audio clips ({have}). "
-            "Re-run: python -m src.download_musiccaps_audio --source hf --limit 1500"
+            f"Too few MusicCaps audio clips ({have}). Place clips under {audio_dir}."
         )
 
     graph_cfg = cfg.get("graph", {})
@@ -1368,9 +1337,9 @@ def train_task4(cfg: dict[str, Any]) -> None:
     test_m = eval_retrieval(test_pairs)
     print(f"[task4] test retrieval: {test_m}")
 
-    # 10 qualitative retrieval examples (caption → top-3 audio)
+    # 10 qualitative retrieval examples (caption -> top-3 audio)
     g_emb, t_emb, stems = embed_split(test_pairs)
-    sim = t_emb @ g_emb.t()  # caption → audio
+    sim = t_emb @ g_emb.t()  # caption -> audio
     caption_by_stem = {p["stem"]: p["caption"] for p in test_pairs}
     examples = []
     n_ex = min(10, len(test_pairs))
@@ -1397,8 +1366,7 @@ def train_task4(cfg: dict[str, Any]) -> None:
     with examples_path.open("w", encoding="utf-8") as f:
         json.dump(examples, f, indent=2)
 
-    # Zero-shot tag prediction from captions (text tower) vs Task 1 supervised reference
-    from src.evaluate import macro_micro_f1
+    # Zero-shot tag prediction from captions vs Task 3 supervised reference (from src.evaluate import macro_micro_f1
 
     tag_data = build_musiccaps_tag_proxy(
         csv_path,
@@ -1414,7 +1382,6 @@ def train_task4(cfg: dict[str, Any]) -> None:
             tag_tok["input_ids"].to(device),
             tag_tok["attention_mask"].to(device),
         ).cpu()
-        # Evaluate on MusicCaps test captions that have labels
         y_true, y_prob = [], []
         for row in tag_data["test"][:2000]:
             tok = tokenize_batch([row["caption"]], tokenizer, max_length=max_length)
@@ -1423,7 +1390,6 @@ def train_task4(cfg: dict[str, Any]) -> None:
                 tok["attention_mask"].to(device),
             ).cpu()
             scores = (c_emb @ tag_emb.t()).squeeze(0).numpy()
-            # map cosine [-1,1] roughly to probs via sigmoid scaled
             prob = 1.0 / (1.0 + np.exp(-5.0 * scores))
             y_prob.append(prob.astype(np.float32))
             y_true.append(row["labels"])
@@ -1431,12 +1397,19 @@ def train_task4(cfg: dict[str, Any]) -> None:
         y_prob_a = np.stack(y_prob, axis=0)
         zs_metrics = macro_micro_f1(y_true_a, y_prob_a, threshold=0.5)
 
-    # Reference: Task 1 supervised test metrics if present
     metrics_file = Path(out_cfg.get("metrics_file", "results/metrics.json"))
+    task3_ref = None
     task1_ref = None
     if metrics_file.exists():
         try:
             prev = json.loads(metrics_file.read_text(encoding="utf-8"))
+            t3 = prev.get("task3_gnn_bert_fusion", {})
+            best_mode = t3.get("best_mode")
+            if best_mode and "ablations" in t3:
+                task3_ref = {
+                    "best_mode": best_mode,
+                    **t3["ablations"][best_mode].get("test", {}),
+                }
             task1_ref = prev.get("task1_bert_musiccaps", {}).get("test")
         except json.JSONDecodeError:
             prev = {}
@@ -1451,8 +1424,8 @@ def train_task4(cfg: dict[str, Any]) -> None:
     a2c = [test_m.get(f"audio2caption_R@{k}", 0.0) for k in ks]
     x = np.arange(len(ks))
     plt.figure(figsize=(6, 4))
-    plt.bar(x - 0.15, c2a, width=0.3, label="Caption→Audio")
-    plt.bar(x + 0.15, a2c, width=0.3, label="Audio→Caption")
+    plt.bar(x - 0.15, c2a, width=0.3, label="Caption->Audio")
+    plt.bar(x + 0.15, a2c, width=0.3, label="Audio->Caption")
     plt.xticks(x, [f"R@{k}" for k in ks])
     plt.ylim(0, 1)
     plt.ylabel("Recall")
@@ -1471,6 +1444,7 @@ def train_task4(cfg: dict[str, Any]) -> None:
             "retrieval_examples": str(examples_path),
             "retrieval_plot": str(plot_path),
             "zero_shot_tag_from_captions": zs_metrics,
+            "task3_supervised_tag_reference": task3_ref,
             "task1_supervised_tag_reference": task1_ref,
         }
     }
@@ -1480,25 +1454,29 @@ def train_task4(cfg: dict[str, Any]) -> None:
     else:
         payload = payload_update
     save_metrics(payload, metrics_file)
-    print(f"[task4] zero-shot tag F1: {zs_metrics} | Task1 ref: {task1_ref}")
+    print(f"[task4] zero-shot tag F1: {zs_metrics} | Task3 ref: {task3_ref}")
     print(f"[task4] wrote {metrics_file}, {examples_path}, {plot_path}")
-
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Train GNN–BERT music context models (CSE425)."
+        description="Train GNN-BERT music context models."
     )
     parser.add_argument("--task", type=int, required=True, choices=[1, 2, 3, 4])
     parser.add_argument("--config", type=str, default="config.yaml")
     args = parser.parse_args()
     cfg = load_config(args.config)
-    {
-        1: train_task1,
-        2: train_task2,
-        3: train_task3,
-        4: train_task4,
-    }[args.task](cfg)
+    if args.task == 1:
+        train_task1(cfg)
+    elif args.task == 2:
+        from src.train_tasks_23 import train_task2 as _t2
 
+        _t2(cfg)
+    elif args.task == 3:
+        from src.train_tasks_23 import train_task3 as _t3
+
+        _t3(cfg)
+    else:
+        train_task4(cfg)
 
 if __name__ == "__main__":
     main()

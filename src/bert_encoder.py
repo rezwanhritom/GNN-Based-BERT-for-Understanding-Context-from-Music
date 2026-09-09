@@ -1,9 +1,8 @@
 """
 BERT text encoder for music tags / captions / lyrics.
 
-Per PDF Section 4.1 (Task 1) and Algorithm 1:
   t = BERT_CLS(X_text)
-  ŷ_k = σ(w_k^T t + b_k)
+  ŷ_k = sigma(w_k^T t + b_k)
   L_BERT = binary cross-entropy per tag
 """
 
@@ -15,9 +14,8 @@ import torch
 import torch.nn as nn
 from transformers import AutoModel, AutoTokenizer
 
-
 class BertMusicTagClassifier(nn.Module):
-    """Task 1: BERT multi-label tag classifier (Algorithm 1)."""
+    """Task 1: BERT multi-label tag classifier."""
 
     def __init__(
         self,
@@ -45,7 +43,7 @@ class BertMusicTagClassifier(nn.Module):
     ) -> torch.Tensor:
         """
         t = BERT_CLS(X_text)
-        ŷ = σ(W t + b)  — returns logits; apply sigmoid outside for BCE-with-logits.
+        ŷ = sigma(W t + b)  - returns logits; apply sigmoid outside for BCE-with-logits.
         """
         out = self.bert(input_ids=input_ids, attention_mask=attention_mask)
         # CLS token
@@ -53,17 +51,15 @@ class BertMusicTagClassifier(nn.Module):
         t = self.dropout(t)
         return self.classifier(t)
 
-
 def build_tokenizer(model_name: str = "bert-base-uncased") -> Any:
     return AutoTokenizer.from_pretrained(model_name)
-
 
 def tokenize_batch(
     texts: list[str],
     tokenizer: Any,
     max_length: int = 128,
 ) -> dict[str, torch.Tensor]:
-    """Tokenize tags/captions/lyrics (PDF: max length 128–256; pad/truncate)."""
+    """Tokenize tags/captions/lyrics."""
     encoded = tokenizer(
         texts,
         max_length=max_length,

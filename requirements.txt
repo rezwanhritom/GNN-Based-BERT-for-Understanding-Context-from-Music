@@ -1,6 +1,4 @@
-# CSE425 GNN-Based BERT Music Context — dependencies from project PDF
-# Audio (§3): librosa · BERT: HuggingFace · GNN: PyTorch Geometric
-
+# Project dependencies
 torch>=2.1.0
 torchvision>=0.16.0
 torchaudio>=2.1.0
@@ -22,3 +20,5 @@ tqdm>=4.66.0
 
 PyYAML>=6.0.1
 jupyter>=1.0.0
+nbconvert>=7.0.0
+ipykernel>=6.0.0

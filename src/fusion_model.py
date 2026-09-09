@@ -1,10 +1,11 @@
 """
-GNN–BERT fusion for multi-context understanding (Task 3).
+GNN-BERT fusion for multi-context understanding (Task 3).
 
-Per PDF Section 4.3 and Algorithm 3:
   Cross-attention fusion (recommended):
     A = softmax(Q K^T / √d),  Q = g W_Q,  K = H_text W_K
-    z = CONCAT(g, A H_text),  ŷ = σ(W z)
+    z = CONCAT(g, A H_text),  ŷ = sigma(W z)
+  Multi-task:
+    L = L_tags + alpha||v - v̂||^2 + beta||a - â||^2
   Ablations: BERT-only, GNN-only, early concat, cross-attention.
 """
 
@@ -12,11 +13,9 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from transformers import AutoModel
 
 from src.gnn_model import MusicGAT, MusicGraphSAGE
-
 
 class CrossAttentionFusion(nn.Module):
     """Cross-attention between graph readout g and BERT token states H_text."""
@@ -35,22 +34,16 @@ class CrossAttentionFusion(nn.Module):
         h_text: torch.Tensor,
         attention_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        """
-        g: (B, d_g), h_text: (B, L, d_t)
-        Returns z = CONCAT(g, attended_text) with shape (B, d_g + d_model).
-        """
-        q = self.w_q(g).unsqueeze(1)  # (B, 1, d)
-        k = self.w_k(h_text)  # (B, L, d)
-        v = self.w_v(h_text)  # (B, L, d)
-        scores = torch.matmul(q, k.transpose(-2, -1)) / (self.d_model**0.5)  # (B, 1, L)
+        q = self.w_q(g).unsqueeze(1)
+        k = self.w_k(h_text)
+        v = self.w_v(h_text)
+        scores = torch.matmul(q, k.transpose(-2, -1)) / (self.d_model**0.5)
         if attention_mask is not None:
-            # mask: 1 = keep, 0 = pad
-            mask = attention_mask.unsqueeze(1)  # (B, 1, L)
+            mask = attention_mask.unsqueeze(1)
             scores = scores.masked_fill(mask == 0, -1e4)
         a = torch.softmax(scores, dim=-1)
-        attended = torch.matmul(a, v).squeeze(1)  # (B, d)
+        attended = torch.matmul(a, v).squeeze(1)
         return torch.cat([g, attended], dim=-1)
-
 
 class EarlyConcatFusion(nn.Module):
     """Ablation: z = CONCAT(g, t) where t is BERT CLS."""
@@ -62,17 +55,17 @@ class EarlyConcatFusion(nn.Module):
     def forward(self, g: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
         return torch.cat([g, t], dim=-1)
 
-
 class GNNBertFusionModel(nn.Module):
     """
-    End-to-end GNN–BERT fusion (Algorithm 3).
+    End-to-end GNN-BERT fusion.
+    Multi-label tag head + optional valence/arousal regression (DEAM L_aux).
     fusion: 'cross_attention' | 'early_concat' | 'gnn_only' | 'bert_only'
     """
 
     def __init__(
         self,
         in_channels: int,
-        num_classes: int,
+        num_labels: int,
         bert_name: str = "bert-base-uncased",
         fusion: str = "cross_attention",
         gnn_type: str = "graphsage",
@@ -81,18 +74,20 @@ class GNNBertFusionModel(nn.Module):
         gnn_dropout: float = 0.2,
         freeze_bert: bool = False,
         d_model: int = 256,
+        predict_emotion: bool = True,
     ) -> None:
         super().__init__()
         self.fusion = fusion
-        self.num_classes = num_classes
+        self.num_labels = num_labels
+        self.predict_emotion = predict_emotion
 
         if gnn_type == "gat":
             self.gnn = MusicGAT(
-                in_channels, gnn_hidden, gnn_layers, num_classes, dropout=gnn_dropout
+                in_channels, gnn_hidden, gnn_layers, num_classes=gnn_hidden, dropout=gnn_dropout
             )
         else:
             self.gnn = MusicGraphSAGE(
-                in_channels, gnn_hidden, gnn_layers, num_classes, dropout=gnn_dropout
+                in_channels, gnn_hidden, gnn_layers, num_classes=gnn_hidden, dropout=gnn_dropout
             )
 
         self.bert = AutoModel.from_pretrained(bert_name)
@@ -115,8 +110,10 @@ class GNNBertFusionModel(nn.Module):
         else:
             raise ValueError(f"Unknown fusion mode: {fusion}")
 
-        self.classifier = nn.Linear(clf_in, num_classes)
         self.dropout = nn.Dropout(0.1)
+        self.classifier = nn.Linear(clf_in, num_labels)
+        self.valence_head = nn.Linear(clf_in, 1) if predict_emotion else None
+        self.arousal_head = nn.Linear(clf_in, 1) if predict_emotion else None
 
     def encode_graph(
         self,
@@ -149,7 +146,7 @@ class GNNBertFusionModel(nn.Module):
             return self.early(g, t)
         if self.fusion == "gnn_only":
             return g
-        return t  # bert_only
+        return t
 
     def forward(
         self,
@@ -159,12 +156,19 @@ class GNNBertFusionModel(nn.Module):
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
         return_z: bool = False,
-    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+        return_emotion: bool = False,
+    ) -> torch.Tensor | tuple:
         g = self.encode_graph(x, edge_index, batch)
         h_text, t = self.encode_text(input_ids, attention_mask)
         z = self.fuse(g, h_text, t, attention_mask)
         z = self.dropout(z)
         logits = self.classifier(z)
+        if return_emotion and self.predict_emotion:
+            v = self.valence_head(z).squeeze(-1)
+            a = self.arousal_head(z).squeeze(-1)
+            if return_z:
+                return logits, v, a, z
+            return logits, v, a
         if return_z:
             return logits, z
         return logits

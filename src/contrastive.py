@@ -1,12 +1,11 @@
 """
-Contrastive dual-encoder GNN–BERT for MusicCaps (Task 4).
+Contrastive dual-encoder GNN-BERT for MusicCaps (Task 4).
 
-Per PDF Section 4.4 and Algorithm 4 (InfoNCE):
   g_i ← Normalize(GNN(G_i))
   t_i ← Normalize(BERT_CLS(caption_i))
-  S_ij = g_i^T t_j / τ
-  L_NCE = −(1/N) Σ_i log[ exp(S_ii) / Σ_j exp(S_ij) ]
-  Metrics: Caption→Audio and Audio→Caption R@1, R@5, R@10
+  S_ij = g_i^T t_j / tau
+  L_NCE = -(1/N) Σ_i log[ exp(S_ii) / Σ_j exp(S_ij) ]
+  Metrics: Caption->Audio and Audio->Caption R@1, R@5, R@10
 """
 
 from __future__ import annotations
@@ -17,7 +16,6 @@ import torch.nn.functional as F
 from transformers import AutoModel
 
 from src.gnn_model import MusicGAT, MusicGraphSAGE
-
 
 class DualEncoderContrastive(nn.Module):
     """Shared embedding space between audio graphs and captions."""
@@ -86,7 +84,6 @@ class DualEncoderContrastive(nn.Module):
         t = self.encode_text(input_ids, attention_mask)
         return g, t
 
-
 def info_nce_loss(
     graph_emb: torch.Tensor,
     text_emb: torch.Tensor,
@@ -103,7 +100,6 @@ def info_nce_loss(
     loss_t2g = F.cross_entropy(logits.t(), labels)
     return 0.5 * (loss_g2t + loss_t2g)
 
-
 def recall_at_k(
     similarity: torch.Tensor,
     k: int,
@@ -115,7 +111,6 @@ def recall_at_k(
     targets = torch.arange(n, device=similarity.device).unsqueeze(1)
     hits = (topk == targets).any(dim=1).float()
     return float(hits.mean().item())
-
 
 def retrieval_metrics(similarity: torch.Tensor, ks: list[int] | None = None) -> dict[str, float]:
     if ks is None:

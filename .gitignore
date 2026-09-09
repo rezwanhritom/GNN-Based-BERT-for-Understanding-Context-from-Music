@@ -20,39 +20,46 @@ env/
 .DS_Store
 Thumbs.db
 
-# Large raw / processed data (keep directory placeholders)
+# Datasets — keep directory placeholders only
 data/raw/**
 !data/raw/.gitkeep
 data/processed/**
 !data/processed/.gitkeep
 
-# Model checkpoints & caches
-*.pt
-*.pth
-*.ckpt
-*.bin
-*.safetensors
+# HuggingFace / local caches
 .cache/
 huggingface/
 transformers_cache/
 bert_cache/
 
-# Experiment noise (keep tracked result stubs)
-results/**/*.png
-results/**/*.jpg
-results/**/*.pdf
-!results/metrics.json
-!results/plots/.gitkeep
-!results/retrieval_examples/.gitkeep
-
-# Local secrets / env
+# Experiment logs
 .env
 *.log
 wandb/
 runs/
 
-# Report build artifacts (keep final PDF when present)
+# Model checkpoints / weights (GitHub 100MB file limit)
+*.pt
+*.pth
+*.ckpt
+*.bin
+results/checkpoints/
+!results/checkpoints/.gitkeep
+
+# Report build / LaTeX sources (submit compiled PDF only)
 report/**/*.aux
 report/**/*.log
 report/**/*.out
 report/**/*.synctex.gz
+report/**/*.tex
+report/**/*.cls
+_ieee_paper/
+*.tex
+
+# Local archives / assignment brief (not part of deliverable tree)
+*.zip
+CSE425_Project*.pdf
+
+# Temp extraction / diagnostic helpers
+_pdf_extract*.txt
+_*.py

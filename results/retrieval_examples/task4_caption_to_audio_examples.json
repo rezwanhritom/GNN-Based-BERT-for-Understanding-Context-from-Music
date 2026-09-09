@@ -1,24 +1,72 @@
 [
   {
+    "query_caption": "The low quality recording features a ballad song that contains sustained strings, mellow piano melody and soft female vocal singing over it. It sounds sad and soulful, like something you would hear at Sunday services.",
+    "query_stem": "-0Gj8-vB1q4_30_40",
+    "top3_matched_clips": [
+      {
+        "stem": "EIzBD62ja8E_30_40",
+        "caption": "This song features a guitar being played to a flamenco melody. Fingerstyle guitar is used. The song starts off at a higher register and ends at the lower register. The guitar is strummed at intervals.",
+        "score": 0.197494238615036,
+        "is_correct": false
+      },
+      {
+        "stem": "D-p9s8y2z_U_0_10",
+        "caption": "This music is instrumental . The tempo is fast with mandolins playing a lively, spirited rhythmic harmony with acoustic guitar accompaniment. The instrumentation is minimal with emphasis on the mandol",
+        "score": 0.19112321734428406,
+        "is_correct": false
+      },
+      {
+        "stem": "7_80oVTLkGU_30_40",
+        "caption": "This music is a percussion instrumental . The tempo is medium fast with a rhythmic tambourine beat. The music is minimal with the sound of the tambourine metal plates clanging and a dull drum head bea",
+        "score": 0.17980097234249115,
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "query_caption": "a male voice is singing a melody with changing tempos while snipping his fingers rhythmically. The recording sounds like it has been recorded in an empty room. This song may be playing, practicing snipping and singing along.",
+    "query_stem": "-0vPFx-wRRI_30_40",
+    "top3_matched_clips": [
+      {
+        "stem": "ALcCb2HJmG8_70_80",
+        "caption": "A typical drum&bass drummer is playing at fast speed with a very liquid digital bass while a male voice is rapping super fast along to the instrumental. This song may be playing in a competition.",
+        "score": 0.12792828679084778,
+        "is_correct": false
+      },
+      {
+        "stem": "5gyMt0YzPQ0_30_40",
+        "caption": "This is a broken beat music piece with jazz funk influences. There is a repeating hollering female vocal sample. There is a keyboard and a synth bass playing the melody. In the background, there is an",
+        "score": 0.12117943167686462,
+        "is_correct": false
+      },
+      {
+        "stem": "9QEm6u4bowQ_30_40",
+        "caption": "This music is instrumental. The tempo is medium fast with an energetic electric guitar lead. The music is minimalist with no accompaniment. It is youthful, powerful, enthusiastic, controlled, engaging",
+        "score": 0.12045978009700775,
+        "is_correct": false
+      }
+    ]
+  },
+  {
     "query_caption": "This song contains digital drums playing a simple groove along with two guitars. One strumming chords along with the snare the other one playing a melody on top. An e-bass is playing the footnote while a piano is playing a major and minor chord progression. A trumpet is playing a loud melody alongsi",
     "query_stem": "-0xzrMun0Rs_30_40",
     "top3_matched_clips": [
       {
-        "stem": "EL2DtgPD4J4_30_40",
-        "caption": "This song is full of electronic, percussive noises and effects. A kick is playing on every beat with some sharp hits. A bass is playing along with the kick. Male voice samples with delay can be heart ",
-        "score": 0.518817126750946,
+        "stem": "ExghbCGRBx0_30_40",
+        "caption": "This is a bluegrass music piece performance. Iconic to the American folk songs, it involves a rapidly played banjo solo. The atmosphere of the piece is cozy and positive. This piece could be used in r",
+        "score": 0.17857250571250916,
         "is_correct": false
       },
       {
-        "stem": "2ATMQxWVpXk_0_10",
-        "caption": "A male singer screams and laughs loudly. The song is medium tempo with steady rock drumming, groovy bass line and electric guitar rhythm. The song is energetic and haunting. The song is a modern punk ",
-        "score": 0.49121320247650146,
+        "stem": "C3o8pEsAu5U_40_50",
+        "caption": "An acoustic drum is strumming chords while a percussion instrument is playing a bass sound along with an e-bass. A male choir is singing in the background while the female voice is singing the first m",
+        "score": 0.14852450788021088,
         "is_correct": false
       },
       {
-        "stem": "4tF0Lt9VEp8_30_40",
-        "caption": "This song features a male voice beatboxing. At the beginning of the song, he beatboxes a simple beat. Post that, the beatboxing is done in layers where the beat is one layer, the cymbals is another la",
-        "score": 0.48866337537765503,
+        "stem": "AKI0VrXEDww_190_200",
+        "caption": "The Soft Rock song features harmonizing male vocals singing over sustained organ keys chords, shimmering cymbals, groovy piano chords in the left channel, acoustic rhythm guitar in the right channel o",
+        "score": 0.14598262310028076,
         "is_correct": false
       }
     ]
@@ -28,21 +76,93 @@
     "query_stem": "-1OlgJWehn8_30_40",
     "top3_matched_clips": [
       {
-        "stem": "ExghbCGRBx0_30_40",
-        "caption": "This is a bluegrass music piece performance. Iconic to the American folk songs, it involves a rapidly played banjo solo. The atmosphere of the piece is cozy and positive. This piece could be used in r",
-        "score": 0.46188586950302124,
+        "stem": "Uvn7waPvseo_30_40",
+        "caption": "This is an instrument showcase jam. It is an electronic music piece played on a drum machine. There is a booming electronic drum beat in the rhythmic background. There is a medium-to-high pitch melodi",
+        "score": 0.17666444182395935,
         "is_correct": false
       },
       {
-        "stem": "ALU-1AILj1c_220_230",
-        "caption": "This music is a mellifluous Indian classical instrumental. The tempo is fast with a harmonic sarod and rhythmic Oud accompaniment. The music is mesmerising, spirited, engaging, captivating and skilful",
-        "score": 0.44279319047927856,
+        "stem": "VM-U7MyZAck_30_40",
+        "caption": "This music is instrumental. The tempo is fast with an electric guitar playing a bright lead with infectious drumming and syncopated bass lines. The music is upbeat, energetic, youthful, animated, spir",
+        "score": 0.17545753717422485,
+        "is_correct": false
+      },
+      {
+        "stem": "770ZkZhGy6A_30_40",
+        "caption": "This song has a lot of percussive elements. Also a catchy melody with arpeggios in the background rising and falling. A kick is playing every beat while motorbike sounds evade the soundscape. This son",
+        "score": 0.17137141525745392,
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "query_caption": "A male singer sings this groovy melody. The song is a techno dance song with a groovy bass line, strong drumming rhythm and a keyboard accompaniment. The song is so groovy and serves as a dance track for the dancing children. The audio quality is very poor with high gains and hissing noise.",
+    "query_stem": "-1UWSisR2zo_30_40",
+    "top3_matched_clips": [
+      {
+        "stem": "LAeWwMC2EaI_30_40",
+        "caption": "This instrumental song features an electric guitar. This guitar plays chords using open strings. The chords are played in a descending pattern initially. This is followed by the strings being plucked ",
+        "score": 0.20286962389945984,
+        "is_correct": false
+      },
+      {
+        "stem": "4AejyFDHP_k_30_40",
+        "caption": "An acoustic guitar almost fully panned to the left side of the speakers is strumming a single chord as a rhythmic element while an upright-bass is playing a walking bassline. The other acoustic guitar",
+        "score": 0.19689185917377472,
         "is_correct": false
       },
       {
         "stem": "4sD0Bvt3FKk_280_290",
         "caption": "A blues rock song is being played. Containing drums that are playing a simple groove along with a blues bassline that is supported by an e-guitar playing the same melody. So does a piano just in a hig",
-        "score": 0.43440377712249756,
+        "score": 0.19486071169376373,
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "query_caption": "someone is playing a high pitched melody on a steel drum. The file is of poor audio-quality.",
+    "query_stem": "-3Kv4fdm7Uk_30_40",
+    "top3_matched_clips": [
+      {
+        "stem": "7_80oVTLkGU_30_40",
+        "caption": "This music is a percussion instrumental . The tempo is medium fast with a rhythmic tambourine beat. The music is minimal with the sound of the tambourine metal plates clanging and a dull drum head bea",
+        "score": 0.22091810405254364,
+        "is_correct": false
+      },
+      {
+        "stem": "9QEm6u4bowQ_30_40",
+        "caption": "This music is instrumental. The tempo is medium fast with an energetic electric guitar lead. The music is minimalist with no accompaniment. It is youthful, powerful, enthusiastic, controlled, engaging",
+        "score": 0.1821173131465912,
+        "is_correct": false
+      },
+      {
+        "stem": "PvHKu1XRSJ0_0_10",
+        "caption": "This is the recording of a tuning video in the key of D sharp. There is an electric guitar playing the note on each string repeatedly. This piece could be used to lift samples to be used in a beat or ",
+        "score": 0.18095722794532776,
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "query_caption": "low fidelity audio from a live performance featuring a solo direct input acoustic guitar strumming airy, suspended open chords. Also present are occasional ambient sounds, perhaps papers being shuffled.",
+    "query_stem": "-4SYC2YgzL8_30_40",
+    "top3_matched_clips": [
+      {
+        "stem": "7_80oVTLkGU_30_40",
+        "caption": "This music is a percussion instrumental . The tempo is medium fast with a rhythmic tambourine beat. The music is minimal with the sound of the tambourine metal plates clanging and a dull drum head bea",
+        "score": 0.2435305118560791,
+        "is_correct": false
+      },
+      {
+        "stem": "LAeWwMC2EaI_30_40",
+        "caption": "This instrumental song features an electric guitar. This guitar plays chords using open strings. The chords are played in a descending pattern initially. This is followed by the strings being plucked ",
+        "score": 0.20714178681373596,
+        "is_correct": false
+      },
+      {
+        "stem": "770ZkZhGy6A_30_40",
+        "caption": "This song has a lot of percussive elements. Also a catchy melody with arpeggios in the background rising and falling. A kick is playing every beat while motorbike sounds evade the soundscape. This son",
+        "score": 0.19692987203598022,
         "is_correct": false
       }
     ]
@@ -52,21 +172,21 @@
     "query_stem": "-5FoeegAgvU_230_240",
     "top3_matched_clips": [
       {
-        "stem": "3kXukXBvDQQ_220_230",
-        "caption": "This song is a lively Indian instrumental. The tempo is fast with lively brass bands playing harmony, energetic drums ,Nagpada and dhol and other Indian percussion and synthesiser with digital arrange",
-        "score": 0.5114136338233948,
+        "stem": "O1RmrE_HfpE_30_40",
+        "caption": "This is a live acoustic performance piece. The didgeridoo is being used in varying ranges and effects to play many different tunes and to get a techno-like sound variety. There is a whole bunch of per",
+        "score": 0.15922991931438446,
         "is_correct": false
       },
       {
-        "stem": "B_ohqOgK6T8_0_10",
-        "caption": "This music is instrumental. The tempo is medium with synthesiser articulation. The music is minimalist with the sound of wind, beep, and vinyl record scratch sound followed by silence.",
-        "score": 0.4462363123893738,
+        "stem": "MvnC1TfNiPY_90_100",
+        "caption": "This song is an energetic dance pop. The tempo is medium fast with keyboard accompaniment, synthesiser articulation,infectious digital drumming and vocal backup supporting the male and female duet. Th",
+        "score": 0.15012000501155853,
         "is_correct": false
       },
       {
-        "stem": "0VjPCd62oKg_100_110",
-        "caption": "This music is a clip of the end of the song. There is no music nor vocals. The audio clip begins with the sound of splashing water followed by ducks quacking before it fades and stops. This song sound",
-        "score": 0.44459033012390137,
+        "stem": "F5e-SEICJP4_60_70",
+        "caption": "The music features for the most part an instrumental but almost at the end of the excerpt a male voice starts to yodel. Up to that point the melody is being played by a marimba, then trumpets and horn",
+        "score": 0.1423509120941162,
         "is_correct": false
       }
     ]
@@ -76,165 +196,45 @@
     "query_stem": "-6HBGg1cAI0_30_40",
     "top3_matched_clips": [
       {
-        "stem": "SOzuJU25uGc_30_40",
-        "caption": "A hard digital kick is playing along with a monotone bass sound. A malled instrument is playing a repetitive melody in the mid to high register. Evolving liquid synth sounds are rising into focus and ",
-        "score": 0.567013144493103,
+        "stem": "0L2ndtt60Q8_30_40",
+        "caption": "This is a parody of an electronic music song with a chipmunk vocal effect. There is an edited version of the original track playing in the background that is transposed to a very high pitch.",
+        "score": 0.13583143055438995,
         "is_correct": false
       },
       {
-        "stem": "SEDfsU63w8I_30_40",
-        "caption": "This is a live recording of a guitar being played through a high gain amp. The signal is clean at the beginning and switches to an overdrive or distortion tone. A humming noise is heard when the chann",
-        "score": 0.529128909111023,
+        "stem": "9VE1-3q27Qg_20_30",
+        "caption": "The music excerpt features a sparse melody being played by an electronic sound that has a vibrating reverb effect on. A synth bass accompanies the melody by playing two notes per beat, one being low a",
+        "score": 0.12076988816261292,
         "is_correct": false
       },
       {
-        "stem": "JDBu-3VCyWc_110_120",
-        "caption": "This is a live performance of a recital. A loud accordion is holding the melodic background as the clarinet performs a solo on top of it. There is also a now (Romanian pan flute) being played. A male ",
-        "score": 0.5250019431114197,
+        "stem": "C3o8pEsAu5U_40_50",
+        "caption": "An acoustic drum is strumming chords while a percussion instrument is playing a bass sound along with an e-bass. A male choir is singing in the background while the female voice is singing the first m",
+        "score": 0.1185518279671669,
         "is_correct": false
       }
     ]
   },
   {
-    "query_caption": "Someone is playing a fast melody on a low bansuri flute along with someone playing tablas and a shrutibox in the background. This song may be playing at a live performance.",
-    "query_stem": "-88me9bBzrk_30_40",
+    "query_caption": "A male voice narrates a monologue to the rhythm of a song in the background. The song is fast tempo with enthusiastic drumming, groovy bass lines,cymbal ride, keyboard accompaniment ,electric guitar and animated vocals. The song plays softly  in the background as the narrator speaks and burgeons whe",
+    "query_stem": "-7B9tPuIP-w_450_460",
     "top3_matched_clips": [
       {
-        "stem": "71hqRT9U0wg_10_20",
-        "caption": "A female vocalist sings this lively Children\u2019s Song. The tempo is fast with a cheerful acoustic guitar and ukulele accompaniment along with clapping. The song is lively, upbeat, engaging, energetic, s",
-        "score": 0.46330058574676514,
-        "is_correct": false
-      },
-      {
-        "stem": "7fVfG0DrLjI_30_40",
-        "caption": "Encouraging gospel music featuring a women's choir, hand clapping, female background shouting, and a lead female vocalist. The choir is accompanied by a band vamping on one chord with an organist, hea",
-        "score": 0.45032912492752075,
-        "is_correct": false
-      },
-      {
-        "stem": "C8VECv8kicU_180_190",
-        "caption": "This is a flamenco music piece being performed live. There is a female vocalist singing passionately in the Spanish language. The acoustic guitar is playing the melodic background while the rhythmic b",
-        "score": 0.43948566913604736,
-        "is_correct": false
-      }
-    ]
-  },
-  {
-    "query_caption": "This clip is an electronic guitar instrumental. The tempo is fast with a vigorous, lively electric guitar lead without any instrumentation. The music is rapid,controlled, intense and vigorous with immense control and dexterity with the instrument.",
-    "query_stem": "-ByoSbgzr4M_0_10",
-    "top3_matched_clips": [
-      {
-        "stem": "0LLlcPiatiU_210_220",
-        "caption": "The song is mostly instrumental with a faint male vocal. The song is medium tempo with a slick drumming rhythm , booming bass line, siren tones and a keyboard playing  arpeggiated tones. The song is f",
-        "score": 0.4487910270690918,
-        "is_correct": false
-      },
-      {
-        "stem": "Puu8SEqYN0k_60_70",
-        "caption": "This is an excerpt from a horror movie trailer. There are ominous sound effects related to the movie such as heartbeat, a man beating a woman and a terrified female voice sounding like she is dying. T",
-        "score": 0.41700682044029236,
-        "is_correct": false
-      },
-      {
-        "stem": "NzVg-cFQJbE_30_40",
-        "caption": "This is a punk rock song with an energetic, youthful feel that is still grungy and gritty. The guitar is dark and powerful in the low tones, contrasted by another electric guitar that's bright and war",
-        "score": 0.4128769636154175,
-        "is_correct": false
-      }
-    ]
-  },
-  {
-    "query_caption": "This is a Christmas music piece with heavy influences from Celtic music. There is a female vocalist singing melodically as the lead. The melodic background is provided by the strings and the piano and at the same time Celtic instruments that resemble a harp and a dulcimer. There is a calming and pos",
-    "query_stem": "-Gf4Ihv1zwc_50_60",
-    "top3_matched_clips": [
-      {
-        "stem": "QBMM1ocXkhY_30_40",
-        "caption": "A male vocalist sings this spirited hip-hop. The tempo is fast with synthesiser articulation, digital drum arrangements and vocal backup. The music is a youthful , enthusiastic, bouncy, punchy rhythmi",
-        "score": 0.566545844078064,
-        "is_correct": false
-      },
-      {
-        "stem": "4b8gTARnmVE_30_40",
-        "caption": "This is a salsa music piece. There is a male vocal in the lead joined by another as a back vocal. All the vocals are singing joyfully. There is a piano playing the main melody while a bass guitar is p",
-        "score": 0.5351665019989014,
-        "is_correct": false
-      },
-      {
-        "stem": "GQz_u0Vc8Os_30_40",
-        "caption": "The Soft Rock song features a soulful male vocal melody over widely spread acoustic rhythm guitar, arpeggiated electric guitar melody and smooth bass. At the end of the loop there is a short snippet o",
-        "score": 0.5106277465820312,
-        "is_correct": false
-      }
-    ]
-  },
-  {
-    "query_caption": "An acoustic drum is playing a simple rock groove with some drum fills on the toms and snare along with a distorted e-bass and e-guitar playing the same line. Panned to the right side of the speaker you can hear a piano sound playing a little melody. A female voice is singing a happy sounding melody ",
-    "query_stem": "-JvB5AL59fM_30_40",
-    "top3_matched_clips": [
-      {
-        "stem": "6VJ_auuKzss_30_40",
-        "caption": "A female vocalist sings this enthusiastic pop. The tempo is fast with an energetic and punchy drumming, synthesiser arrangements and flute melody. The song is youthful, enthusiastic, upbeat, vivacious",
-        "score": 0.5489752292633057,
-        "is_correct": false
-      },
-      {
-        "stem": "JrOV2Xz2djA_90_100",
-        "caption": "A male vocalist sings this  energetic rock song. The song is  fast tempo with emphatic drumming, groovy bass lines, funky electric guitar feedback and keyboard accompaniment, with animated, high pitch",
-        "score": 0.5449676513671875,
-        "is_correct": false
-      },
-      {
-        "stem": "On9epzZ_ceI_30_40",
-        "caption": "The Video Game Sound recording features a lot of in-game sound effects of the main character and his surroundings, followed by background, jazzy music in the background. The music contains funky piano",
-        "score": 0.5373778343200684,
-        "is_correct": false
-      }
-    ]
-  },
-  {
-    "query_caption": "This is a classical music piece belonging to the baroque period. The piece is being performed with a harp. There is a catchy tune being played with a positive aura. This piece could suit well as wedding music. It could be used in the soundtrack of a documentary. It could also be playing in the backg",
-    "query_stem": "-OUIEnuNd1I_30_40",
-    "top3_matched_clips": [
-      {
-        "stem": "-f1DNyngKVY_30_40",
-        "caption": "This is an instrumental sitar music piece. The sitar is being played at a medium-to-high range. There is a calming and relaxing atmosphere to this piece. This piece can be used in the background of a ",
-        "score": 0.4209185838699341,
+        "stem": "CBUAy9Zl6ZE_10_20",
+        "caption": "This is a melancholic Moroccan music piece. The male vocalist is singing in an agitated, crying-like manner. The only accompaniment being the violin creates a dense atmosphere loaded with emotion. Thi",
+        "score": 0.0794609934091568,
         "is_correct": false
       },
       {
         "stem": "2GWkKVHxGRM_30_40",
         "caption": "This music is a live instrumental.The music is medium tempo with a dominant piano accompaniment, keyboard harmony, bright drumming, funky bass line, congas rhythm and tambourine beats. The music is a ",
-        "score": 0.415607213973999,
+        "score": 0.07932397723197937,
         "is_correct": false
       },
       {
-        "stem": "AKI0VrXEDww_190_200",
-        "caption": "The Soft Rock song features harmonizing male vocals singing over sustained organ keys chords, shimmering cymbals, groovy piano chords in the left channel, acoustic rhythm guitar in the right channel o",
-        "score": 0.3865056037902832,
-        "is_correct": false
-      }
-    ]
-  },
-  {
-    "query_caption": "This music is a spirited instrumental. The tempo is fast with an animated Piano harmony, synthesiser  arrangements, synthesised violins, rhythmic digital drums, funky bass lines and electronic sounds. The music is superimposed over sounds of tapping and rhythmic beeping. The music is happy, perky, u",
-    "query_stem": "-Q9MTRXS4bE_30_40",
-    "top3_matched_clips": [
-      {
-        "stem": "-5FoeegAgvU_230_240",
-        "caption": "The instrumental music features an ensemble that resembles the orchestra. The melody is being played by a brass section while strings provide harmonic accompaniment. At the end of the music excerpt on",
-        "score": 0.37402230501174927,
-        "is_correct": false
-      },
-      {
-        "stem": "N_Wx35sNqdM_80_90",
-        "caption": "The male voice is singing while male backing voices are underlining some phrases. They are adding harmonies to his singing. An acoustic drum and e-bass are holding the groove while a piano and e-guita",
-        "score": 0.33840224146842957,
-        "is_correct": false
-      },
-      {
-        "stem": "0LLlcPiatiU_210_220",
-        "caption": "The song is mostly instrumental with a faint male vocal. The song is medium tempo with a slick drumming rhythm , booming bass line, siren tones and a keyboard playing  arpeggiated tones. The song is f",
-        "score": 0.32437625527381897,
+        "stem": "0bRUkLsttto_30_40",
+        "caption": "This is a hip-hop piece. There is a male vocal rapping at the forefront while other male vocals can be heard singing ad-libs. A repeated theme is being played by a keyboard. A synth bass with low-to-m",
+        "score": 0.0761512964963913,
         "is_correct": false
       }
     ]

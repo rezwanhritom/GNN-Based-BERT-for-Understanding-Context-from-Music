@@ -1,0 +1,299 @@
+{
+  "scale": [
+    1,
+    5
+  ],
+  "n_listeners": 5,
+  "n_items": 10,
+  "instruction": "Rate whether the top-1 retrieved clip matches the query caption (1=no match, 5=perfect).",
+  "listeners": [
+    {
+      "listener_id": "L1",
+      "protocol": "human",
+      "ratings": [
+        {
+          "query_stem": "-0Gj8-vB1q4_30_40",
+          "score": 2,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-0vPFx-wRRI_30_40",
+          "score": 4,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-0xzrMun0Rs_30_40",
+          "score": 2,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-1OlgJWehn8_30_40",
+          "score": 1,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-1UWSisR2zo_30_40",
+          "score": 2,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-3Kv4fdm7Uk_30_40",
+          "score": 2,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-4SYC2YgzL8_30_40",
+          "score": 1,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-5FoeegAgvU_230_240",
+          "score": 2,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-6HBGg1cAI0_30_40",
+          "score": 2,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-7B9tPuIP-w_450_460",
+          "score": 2,
+          "top1_correct": false
+        }
+      ],
+      "mean_score": 2.0
+    },
+    {
+      "listener_id": "L2",
+      "protocol": "human",
+      "ratings": [
+        {
+          "query_stem": "-0Gj8-vB1q4_30_40",
+          "score": 3,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-0vPFx-wRRI_30_40",
+          "score": 5,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-0xzrMun0Rs_30_40",
+          "score": 2,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-1OlgJWehn8_30_40",
+          "score": 2,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-1UWSisR2zo_30_40",
+          "score": 2,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-3Kv4fdm7Uk_30_40",
+          "score": 2,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-4SYC2YgzL8_30_40",
+          "score": 1,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-5FoeegAgvU_230_240",
+          "score": 2,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-6HBGg1cAI0_30_40",
+          "score": 3,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-7B9tPuIP-w_450_460",
+          "score": 2,
+          "top1_correct": false
+        }
+      ],
+      "mean_score": 2.4
+    },
+    {
+      "listener_id": "L3",
+      "protocol": "human",
+      "ratings": [
+        {
+          "query_stem": "-0Gj8-vB1q4_30_40",
+          "score": 1,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-0vPFx-wRRI_30_40",
+          "score": 5,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-0xzrMun0Rs_30_40",
+          "score": 1,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-1OlgJWehn8_30_40",
+          "score": 1,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-1UWSisR2zo_30_40",
+          "score": 1,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-3Kv4fdm7Uk_30_40",
+          "score": 5,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-4SYC2YgzL8_30_40",
+          "score": 1,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-5FoeegAgvU_230_240",
+          "score": 1,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-6HBGg1cAI0_30_40",
+          "score": 1,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-7B9tPuIP-w_450_460",
+          "score": 5,
+          "top1_correct": false
+        }
+      ],
+      "mean_score": 2.2
+    },
+    {
+      "listener_id": "L4",
+      "protocol": "human",
+      "ratings": [
+        {
+          "query_stem": "-0Gj8-vB1q4_30_40",
+          "score": 3,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-0vPFx-wRRI_30_40",
+          "score": 5,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-0xzrMun0Rs_30_40",
+          "score": 2,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-1OlgJWehn8_30_40",
+          "score": 2,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-1UWSisR2zo_30_40",
+          "score": 2,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-3Kv4fdm7Uk_30_40",
+          "score": 2,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-4SYC2YgzL8_30_40",
+          "score": 1,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-5FoeegAgvU_230_240",
+          "score": 2,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-6HBGg1cAI0_30_40",
+          "score": 3,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-7B9tPuIP-w_450_460",
+          "score": 3,
+          "top1_correct": false
+        }
+      ],
+      "mean_score": 2.5
+    },
+    {
+      "listener_id": "L5",
+      "protocol": "human",
+      "ratings": [
+        {
+          "query_stem": "-0Gj8-vB1q4_30_40",
+          "score": 5,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-0vPFx-wRRI_30_40",
+          "score": 5,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-0xzrMun0Rs_30_40",
+          "score": 4,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-1OlgJWehn8_30_40",
+          "score": 4,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-1UWSisR2zo_30_40",
+          "score": 4,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-3Kv4fdm7Uk_30_40",
+          "score": 4,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-4SYC2YgzL8_30_40",
+          "score": 1,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-5FoeegAgvU_230_240",
+          "score": 4,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-6HBGg1cAI0_30_40",
+          "score": 5,
+          "top1_correct": false
+        },
+        {
+          "query_stem": "-7B9tPuIP-w_450_460",
+          "score": 4,
+          "top1_correct": false
+        }
+      ],
+      "mean_score": 4.0
+    }
+  ],
+  "mean_rating": 2.62,
+  "std_rating": 1.398427688513067,
+  "note": "Five listeners rated whether the top-1 retrieved clip matches the query caption (1-5)."
+}

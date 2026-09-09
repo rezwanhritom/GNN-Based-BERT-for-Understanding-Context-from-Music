@@ -1,32 +1,284 @@
 [
   {
-    "track_id": 704,
-    "text": "Mano De Dios. Artist: F\u00f3sforo. Album: Macondo. Tags: ['fosforo', 'reggae', 'latin', 'spanish', 'reggaeton', 'fsforo']",
-    "true_genre": "International",
-    "pred_genre": "International",
-    "correct": true,
-    "num_nodes": 10,
-    "num_edges": 24,
-    "graph_path_note": "Segment graph with 10 nodes; temporal + similarity edges (\u03c4=0.7)."
-  },
-  {
-    "track_id": 705,
-    "text": "Tio Cocodrilo. Artist: F\u00f3sforo. Album: Macondo. Tags: ['fosforo', 'reggae', 'latin', 'spanish', 'reggaeton', 'fsforo']",
-    "true_genre": "International",
-    "pred_genre": "International",
-    "correct": true,
-    "num_nodes": 10,
-    "num_edges": 62,
-    "graph_path_note": "Segment graph with 10 nodes; temporal + similarity edges (\u03c4=0.7)."
-  },
-  {
     "track_id": 182,
-    "text": "Jules Lost His Jewels. Artist: Ariel Pink's Haunted Graffiti. Album: Worn Copy. Tags: ['ariel pinks haunted graffiti']",
+    "text": "Jules Lost His Jewels. Artist: Ariel Pink's Haunted Graffiti.",
     "true_genre": "Rock",
-    "pred_genre": "Experimental",
-    "correct": false,
-    "num_nodes": 10,
-    "num_edges": 20,
-    "graph_path_note": "Segment graph with 10 nodes; temporal + similarity edges (\u03c4=0.7)."
+    "mood_tag": "Rock",
+    "top_pred_labels": [
+      {
+        "name": "genre:38",
+        "score": 0.8144279718399048
+      },
+      {
+        "name": "genre:1",
+        "score": 0.08046197891235352
+      },
+      {
+        "name": "genre:247",
+        "score": 0.018011847510933876
+      },
+      {
+        "name": "genre:10",
+        "score": 0.013190892525017262
+      },
+      {
+        "name": "genre:30",
+        "score": 0.011998274363577366
+      }
+    ],
+    "graph_paths": [
+      {
+        "path": [
+          "D#",
+          "A#",
+          "D#"
+        ],
+        "nodes": [
+          3,
+          10,
+          3
+        ],
+        "weight": 41.0
+      },
+      {
+        "path": [
+          "D#",
+          "A#"
+        ],
+        "nodes": [
+          3,
+          10
+        ],
+        "weight": 21.0
+      },
+      {
+        "path": [
+          "A#",
+          "D#"
+        ],
+        "nodes": [
+          10,
+          3
+        ],
+        "weight": 20.0
+      },
+      {
+        "path": [
+          "A#",
+          "F"
+        ],
+        "nodes": [
+          10,
+          5
+        ],
+        "weight": 16.0
+      },
+      {
+        "path": [
+          "G",
+          "F#"
+        ],
+        "nodes": [
+          7,
+          6
+        ],
+        "weight": 15.0
+      }
+    ],
+    "path_plot": "results\\case_studies\\track_182_chord_paths.png",
+    "caption_lyric_alignment": {
+      "overlapping_terms": [],
+      "note": "Alignment = predicted tags/genre appearing in track text metadata."
+    },
+    "num_nodes": 12,
+    "num_edges": 116
+  },
+  {
+    "track_id": 704,
+    "text": "Mano De Dios. Artist: F\u00f3sforo.",
+    "true_genre": "International",
+    "mood_tag": "International",
+    "top_pred_labels": [
+      {
+        "name": "genre:12",
+        "score": 0.7550299763679504
+      },
+      {
+        "name": "genre:10",
+        "score": 0.14198431372642517
+      },
+      {
+        "name": "genre:66",
+        "score": 0.1318024843931198
+      },
+      {
+        "name": "genre:25",
+        "score": 0.03954866901040077
+      },
+      {
+        "name": "genre:17",
+        "score": 0.03934984654188156
+      }
+    ],
+    "graph_paths": [
+      {
+        "path": [
+          "C",
+          "B",
+          "C"
+        ],
+        "nodes": [
+          0,
+          11,
+          0
+        ],
+        "weight": 45.0
+      },
+      {
+        "path": [
+          "C",
+          "B"
+        ],
+        "nodes": [
+          0,
+          11
+        ],
+        "weight": 28.0
+      },
+      {
+        "path": [
+          "B",
+          "C"
+        ],
+        "nodes": [
+          11,
+          0
+        ],
+        "weight": 17.0
+      },
+      {
+        "path": [
+          "D",
+          "C#"
+        ],
+        "nodes": [
+          2,
+          1
+        ],
+        "weight": 15.0
+      },
+      {
+        "path": [
+          "D",
+          "G"
+        ],
+        "nodes": [
+          2,
+          7
+        ],
+        "weight": 12.0
+      }
+    ],
+    "path_plot": "results\\case_studies\\track_704_chord_paths.png",
+    "caption_lyric_alignment": {
+      "overlapping_terms": [],
+      "note": "Alignment = predicted tags/genre appearing in track text metadata."
+    },
+    "num_nodes": 12,
+    "num_edges": 107
+  },
+  {
+    "track_id": 890,
+    "text": "Softly Tomorrow. Artist: Ilyas Ahmed.",
+    "true_genre": "Folk",
+    "mood_tag": "Folk",
+    "top_pred_labels": [
+      {
+        "name": "genre:38",
+        "score": 0.9467542171478271
+      },
+      {
+        "name": "genre:17",
+        "score": 0.07337474077939987
+      },
+      {
+        "name": "genre:47",
+        "score": 0.07249154150485992
+      },
+      {
+        "name": "genre:514",
+        "score": 0.06699994206428528
+      },
+      {
+        "name": "genre:6",
+        "score": 0.03541666641831398
+      }
+    ],
+    "graph_paths": [
+      {
+        "path": [
+          "B",
+          "F#",
+          "B"
+        ],
+        "nodes": [
+          11,
+          6,
+          11
+        ],
+        "weight": 73.0
+      },
+      {
+        "path": [
+          "B",
+          "F#"
+        ],
+        "nodes": [
+          11,
+          6
+        ],
+        "weight": 38.0
+      },
+      {
+        "path": [
+          "F#",
+          "B"
+        ],
+        "nodes": [
+          6,
+          11
+        ],
+        "weight": 35.0
+      },
+      {
+        "path": [
+          "E",
+          "B"
+        ],
+        "nodes": [
+          4,
+          11
+        ],
+        "weight": 30.0
+      },
+      {
+        "path": [
+          "B",
+          "E"
+        ],
+        "nodes": [
+          11,
+          4
+        ],
+        "weight": 26.0
+      }
+    ],
+    "path_plot": "results\\case_studies\\track_890_chord_paths.png",
+    "caption_lyric_alignment": {
+      "overlapping_terms": [],
+      "note": "Alignment = predicted tags/genre appearing in track text metadata."
+    },
+    "num_nodes": 12,
+    "num_edges": 56
   }
 ]

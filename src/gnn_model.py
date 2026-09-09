@@ -1,11 +1,10 @@
 """
 GNN encoder on music structure graphs (Task 2).
 
-Per PDF Section 4.2 and Algorithm 2:
   GraphSAGE update:
-    h_i^(l+1) = σ( W^(l) · CONCAT( h_i^(l), MEAN_{j∈N(i)} h_j^(l) ) )
+    h_i^(l+1) = sigma( W^(l) · CONCAT( h_i^(l), MEAN_{jinN(i)} h_j^(l) ) )
   Graph readout (mean pooling):
-    g = (1/|V|) Σ_i h_i^(L),  ŷ = σ(W g + b)
+    g = (1/|V|) Σ_i h_i^(L),  ŷ = sigma(W g + b)
   Alternative: GAT. Implemented with PyTorch Geometric.
 
 Also includes Baseline B2: CNN on mel-spectrogram (no graph, no text).
@@ -17,7 +16,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GATConv, SAGEConv, global_mean_pool
-
 
 class MusicGraphSAGE(nn.Module):
     """GraphSAGE encoder + mean-pool readout for genre prediction."""
@@ -55,9 +53,8 @@ class MusicGraphSAGE(nn.Module):
         g = self.encode(x, edge_index, batch)
         return self.classifier(g)
 
-
 class MusicGAT(nn.Module):
-    """Optional GAT encoder (PDF allows GraphSAGE or GAT)."""
+    """Optional GAT encoder."""
 
     def __init__(
         self,
@@ -94,7 +91,6 @@ class MusicGAT(nn.Module):
     ) -> torch.Tensor:
         g = self.encode(x, edge_index, batch)
         return self.classifier(g)
-
 
 class CNNMelBaseline(nn.Module):
     """
